@@ -195,6 +195,20 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess }: CheckoutMod
               <div className="mt-8 text-center text-xs text-stone-400">
                 Thank you for shopping with us!
               </div>
+
+              {/* Terms & Conditions */}
+              <div className="mt-6 border-t border-dashed border-stone-200 pt-5">
+                <p className="text-center text-[10px] font-semibold uppercase tracking-widest text-stone-400 mb-3">Terms & Conditions</p>
+                <ol className="list-decimal list-inside space-y-1.5 text-[10px] text-stone-400 leading-relaxed">
+                  <li>Items can be returned or exchanged within <strong className="text-stone-500">7 days</strong> of purchase with the original receipt.</li>
+                  <li>Products must be unused, undamaged, and in their original packaging for a valid return.</li>
+                  <li>Refunds will be issued as a store credit code redeemable on your next purchase.</li>
+                  <li>Electronics and perishable goods are <strong className="text-stone-500">non-returnable</strong> once opened.</li>
+                  <li>Equinox POS is not responsible for damage caused by misuse or improper handling.</li>
+                  <li>Prices are inclusive of applicable taxes. All sales are subject to availability.</li>
+                  <li>For support, contact us at support@equinoxpos.com or visit our store.</li>
+                </ol>
+              </div>
             </div>
 
             <div className="flex gap-3 p-6 border-t border-stone-100 bg-stone-50 print:hidden">
