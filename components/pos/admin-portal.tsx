@@ -689,7 +689,17 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
                 <input required value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className={inputClass} placeholder="Apples" />
               </Field>
               <Field label="Category">
-                <select value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} className={inputClass}>
+                <select
+                  value={["Staples","Pulses","Oils","Dairy","Snacks","Beverages","Electronics","Perishables","Vegetables"].includes(newProduct.category) ? newProduct.category : "__custom__"}
+                  onChange={e => {
+                    if (e.target.value === "__custom__") {
+                      setNewProduct({...newProduct, category: ""})
+                    } else {
+                      setNewProduct({...newProduct, category: e.target.value})
+                    }
+                  }}
+                  className={inputClass}
+                >
                   <option>Staples</option>
                   <option>Pulses</option>
                   <option>Oils</option>
@@ -698,7 +708,19 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
                   <option>Beverages</option>
                   <option>Electronics</option>
                   <option>Perishables</option>
+                  <option>Vegetables</option>
+                  <option value="__custom__">+ Custom Category…</option>
                 </select>
+                {!["Staples","Pulses","Oils","Dairy","Snacks","Beverages","Electronics","Perishables","Vegetables"].includes(newProduct.category) && (
+                  <input
+                    required
+                    autoFocus
+                    value={newProduct.category}
+                    onChange={e => setNewProduct({...newProduct, category: e.target.value})}
+                    className={`${inputClass} mt-2`}
+                    placeholder="Type custom category name…"
+                  />
+                )}
               </Field>
               <Field label="Price (₹)">
                 <input required type="number" step="0.01" min="0" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className={inputClass} placeholder="0.00" />
