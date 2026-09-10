@@ -97,6 +97,7 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
   const [authPrompt, setAuthPrompt] = useState<{ action: "add" | "remove" | "discount" | "return" | "settings", targetId?: string, payload?: any } | null>(null)
   const [authPassword, setAuthPassword] = useState("")
   const [showAuthPassword, setShowAuthPassword] = useState(false)
+  const [showDbPassword, setShowDbPassword] = useState(false)
   const [authError, setAuthError] = useState("")
   const [isAuthing, setIsAuthing] = useState(false)
   const [discountType, setDiscountType] = useState("FLAT_THRESHOLD")
@@ -514,7 +515,16 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
                     <input className={inputClass} defaultValue="pos_admin" />
                   </Field>
                   <Field label="Password">
-                    <input type="password" className={inputClass} defaultValue="supersecret" />
+                    <div className="relative">
+                      <input type={showDbPassword ? "text" : "password"} className={inputClass} defaultValue="supersecret" />
+                      <button
+                        type="button"
+                        onClick={() => setShowDbPassword(!showDbPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+                      >
+                        {showDbPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </Field>
                 </div>
 
