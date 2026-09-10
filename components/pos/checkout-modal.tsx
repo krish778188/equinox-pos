@@ -84,8 +84,8 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess }: CheckoutMod
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm print:backdrop-blur-none print:bg-white print:p-0">
-      <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl print:w-full print:max-w-none print:shadow-none print:rounded-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-10 bg-stone-900/40 backdrop-blur-sm print:backdrop-blur-none print:bg-white print:p-0">
+      <div className="relative w-full max-w-md max-h-[85vh] overflow-y-auto rounded-3xl bg-white shadow-2xl print:w-full print:max-w-none print:max-h-none print:overflow-visible print:shadow-none print:rounded-none">
         
         {step === "form" && (
           <>
