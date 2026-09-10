@@ -19,6 +19,7 @@ export default function Page() {
   const [active, setActive] = useState<NavKey>("checkout")
   const [query, setQuery] = useState("")
   const [cart, setCart] = useState<CartItem[]>([])
+  const [darkMode, setDarkMode] = useState(false)
   
   const [loggedInUser, setLoggedInUser] = useState<any>(null)
 
@@ -112,7 +113,7 @@ export default function Page() {
   const heading = pageTitles[active] || pageTitles.admin
 
   return (
-    <div className="relative flex flex-col lg:flex-row min-h-screen lg:h-screen gap-4 lg:overflow-hidden bg-[#FAF9F6] p-4 text-stone-800">
+    <div className={`relative flex flex-col lg:flex-row min-h-screen lg:h-screen gap-4 lg:overflow-hidden bg-[#FAF9F6] p-4 text-stone-800 transition-all duration-500 ${darkMode ? 'invert hue-rotate-180' : ''}`}>
       <div
         aria-hidden
         className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(251,113,133,0.14),transparent_70%)] blur-2xl"
@@ -131,6 +132,9 @@ export default function Page() {
             <p className="mt-0.5 text-sm text-stone-400">{heading.subtitle}</p>
           </div>
           <div className="flex items-center gap-4">
+            <button onClick={() => setDarkMode(!darkMode)} className="rounded-full bg-white/70 p-2 text-stone-600 shadow hover:bg-white transition-all">
+              {darkMode ? "☀️" : "🌙"}
+            </button>
             <div className="text-sm font-medium text-stone-600">
               Logged in as <span className="font-semibold text-stone-800">{loggedInUser.name}</span>
             </div>
