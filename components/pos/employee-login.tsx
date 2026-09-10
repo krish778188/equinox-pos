@@ -50,10 +50,12 @@ export function EmployeeLogin({ onSuccess }: { onSuccess: (user: any) => void })
 
         <div className="mb-6 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 text-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-2">Demo Credentials</p>
-          <div className="flex justify-center gap-4 text-sm font-medium text-indigo-900">
-            <div><span className="text-indigo-400 font-normal">ID:</span> admin <br/><span className="text-indigo-400 font-normal">Pass:</span> equinox@123</div>
-            <div className="w-px bg-indigo-200" />
-            <div><span className="text-indigo-400 font-normal">ID:</span> USR-8888 <br/><span className="text-indigo-400 font-normal">Pass:</span> demo123</div>
+          <div className="flex flex-col gap-2 text-sm font-medium text-indigo-900">
+            <div><span className="text-indigo-400 font-normal">Admin:</span> admin <span className="text-indigo-400 font-normal px-1">| Pass:</span> equinox@123</div>
+            <div className="h-px w-full bg-indigo-200" />
+            <div><span className="text-indigo-400 font-normal">Manager:</span> manager <span className="text-indigo-400 font-normal px-1">| Pass:</span> equinox</div>
+            <div className="h-px w-full bg-indigo-200" />
+            <div><span className="text-indigo-400 font-normal">Cashier:</span> USR-8888 <span className="text-indigo-400 font-normal px-1">| Pass:</span> demo123</div>
           </div>
         </div>
 
