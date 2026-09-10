@@ -11,7 +11,9 @@ import {
   ChevronRight,
   Printer,
   X,
-  Loader2
+  Loader2,
+  Eye,
+  EyeOff
 } from "lucide-react"
 
 // (keeping cardBase, SectionHeading, Field, inputClass, Toggle as is)
@@ -94,6 +96,7 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
   // Auth Prompt State
   const [authPrompt, setAuthPrompt] = useState<{ action: "add" | "remove" | "discount", targetId?: string, payload?: any } | null>(null)
   const [authPassword, setAuthPassword] = useState("")
+  const [showAuthPassword, setShowAuthPassword] = useState(false)
   const [authError, setAuthError] = useState("")
   const [isAuthing, setIsAuthing] = useState(false)
   const [discountType, setDiscountType] = useState("FLAT_THRESHOLD")
@@ -766,15 +769,24 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
           </div>
           {authError && <div className="mb-4 rounded-xl bg-rose-50 p-3 text-center text-sm font-medium text-rose-600">{authError}</div>}
           <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
-            <input
-              required
-              type="password"
-              autoFocus
-              value={authPassword}
-              onChange={(e) => setAuthPassword(e.target.value)}
-              className={inputClass}
-              placeholder="Admin Password"
-            />
+            <div className="relative">
+              <input
+                required
+                type={showAuthPassword ? "text" : "password"}
+                autoFocus
+                value={authPassword}
+                onChange={(e) => setAuthPassword(e.target.value)}
+                className={`${inputClass} pr-12`}
+                placeholder="Admin Password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowAuthPassword(!showAuthPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+              >
+                {showAuthPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
             <button
               type="submit"
               disabled={isAuthing}

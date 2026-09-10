@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Users, Loader2 } from "lucide-react"
+import { Users, Loader2, Eye, EyeOff } from "lucide-react"
 
 export function EmployeeLogin({ onSuccess }: { onSuccess: (user: any) => void }) {
   const [id, setId] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -69,14 +70,23 @@ export function EmployeeLogin({ onSuccess }: { onSuccess: (user: any) => void })
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">Password</span>
-            <input
-              required
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full rounded-2xl border border-white/80 bg-white/80 px-4 py-3 text-sm text-stone-700 shadow-[inset_0_1px_2px_rgba(120,90,60,0.06)] outline-none transition-all placeholder:text-stone-300 focus:border-indigo-200 focus:ring-4 focus:ring-indigo-100/70"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                required
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full rounded-2xl border border-white/80 bg-white/80 px-4 py-3 pr-12 text-sm text-stone-700 shadow-[inset_0_1px_2px_rgba(120,90,60,0.06)] outline-none transition-all placeholder:text-stone-300 focus:border-indigo-200 focus:ring-4 focus:ring-indigo-100/70"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </label>
           <button
             type="submit"
