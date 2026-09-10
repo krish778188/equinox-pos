@@ -94,7 +94,7 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
   const [isAddingProduct, setIsAddingProduct] = useState(false)
 
   // Auth Prompt State
-  const [authPrompt, setAuthPrompt] = useState<{ action: "add" | "remove" | "discount", targetId?: string, payload?: any } | null>(null)
+  const [authPrompt, setAuthPrompt] = useState<{ action: "add" | "remove" | "discount" | "return" | "settings", targetId?: string, payload?: any } | null>(null)
   const [authPassword, setAuthPassword] = useState("")
   const [showAuthPassword, setShowAuthPassword] = useState(false)
   const [authError, setAuthError] = useState("")
@@ -104,6 +104,15 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
   const [salesList, setSalesList] = useState<any[]>([])
   const [selectedBill, setSelectedBill] = useState<any>(null)
   const [billSearch, setBillSearch] = useState("")
+
+  const [settingsForm, setSettingsForm] = useState({
+    storeName: "Equinox",
+    timezone: "Asia/Kolkata",
+    gstRate: "5",
+    gstin: "29ABCDE1234F1Z5",
+    headerLine: "Thanks for visiting Equinox",
+    footerNote: "Returns accepted within 7 days",
+  })
 
   useEffect(() => {
     fetch("/api/employees").then(res => res.json()).then(data => {
@@ -232,6 +241,11 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
           await executeAddDiscount(authPrompt.payload)
         } else if (authPrompt?.action === "return" && authPrompt.payload) {
           await executeReturn(authPrompt.payload)
+        } else if (authPrompt?.action === "settings" && authPrompt.payload) {
+          setSettingsForm(authPrompt.payload)
+          alert("Settings saved successfully!")
+          setAuthPrompt(null)
+          setAuthPassword("")
         }
       } else {
         setAuthError("Incorrect password")
@@ -335,10 +349,10 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
                   </div>
                   <div className="flex flex-col gap-3">
                     <Field label="Store name">
-                      <input className={inputClass} defaultValue="Equinox" />
+                      <input className={inputClass} value={settingsForm.storeName} onChange={e => setSettingsForm(f => ({...f, storeName: e.target.value}))} />
                     </Field>
                     <Field label="Timezone">
-                      <select className={inputClass} defaultValue="Asia/Kolkata">
+                      <select className={inputClass} value={settingsForm.timezone} onChange={e => setSettingsForm(f => ({...f, timezone: e.target.value}))}>
                         <option>Asia/Kolkata</option>
                         <option>Asia/Dubai</option>
                         <option>Asia/Singapore</option>
@@ -360,12 +374,12 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
                   <div className="flex flex-col gap-3">
                     <Field label="Default GST rate">
                       <div className="relative">
-                        <input className={inputClass} defaultValue="5" />
+                        <input className={inputClass} value={settingsForm.gstRate} onChange={e => setSettingsForm(f => ({...f, gstRate: e.target.value}))} />
                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-stone-400">%</span>
                       </div>
                     </Field>
                     <Field label="GSTIN">
-                      <input className={inputClass} defaultValue="29ABCDE1234F1Z5" />
+                      <input className={inputClass} value={settingsForm.gstin} onChange={e => setSettingsForm(f => ({...f, gstin: e.target.value}))} />
                     </Field>
                   </div>
                 </div>
@@ -382,14 +396,24 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Field label="Header line">
-                      <input className={inputClass} defaultValue="Thanks for visiting Equinox" />
+                      <input className={inputClass} value={settingsForm.headerLine} onChange={e => setSettingsForm(f => ({...f, headerLine: e.target.value}))} />
                     </Field>
                     <Field label="Footer note">
-                      <input className={inputClass} defaultValue="Returns accepted within 14 days" />
+                      <input className={inputClass} value={settingsForm.footerNote} onChange={e => setSettingsForm(f => ({...f, footerNote: e.target.value}))} />
                     </Field>
                     <Toggle defaultOn label="Show itemized tax" />
                     <Toggle defaultOn label="Print QR receipt" />
                   </div>
+                </div>
+
+                {/* Apply Changes Button */}
+                <div className="sm:col-span-2">
+                  <button
+                    onClick={() => setAuthPrompt({ action: "settings", payload: { ...settingsForm } })}
+                    className="w-full rounded-2xl bg-stone-800 px-4 py-3.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-stone-700 active:scale-[0.98]"
+                  >
+                    🔒 Apply Changes
+                  </button>
                 </div>
 
                 {/* Discounts */}
