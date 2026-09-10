@@ -849,7 +849,7 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
           <div className="px-6 pb-6 pt-3">
             <button
               onClick={() => {
-                if (window.confirm(`Confirm refund of ₹${selectedBill.total_amount.toFixed(2)} for ${selectedBill.billNo}?\n\nThis will:\n• Restore all stock\n• Delete this bill\n• Generate a Return Credit Code`)) {
+                if (window.confirm(`Confirm refund of ₹${selectedBill.total_amount.toFixed(2)} for ${selectedBill.billNo}?`)) {
                   setAuthPrompt({ action: "return", payload: { saleId: selectedBill.id, amount: selectedBill.total_amount, date: selectedBill.created_at } })
                   setSelectedBill(null)
                 }
