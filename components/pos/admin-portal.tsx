@@ -102,6 +102,8 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
   const [discountType, setDiscountType] = useState("FLAT_THRESHOLD")
 
   const [salesList, setSalesList] = useState<any[]>([])
+  const [selectedBill, setSelectedBill] = useState<any>(null)
+  const [billSearch, setBillSearch] = useState("")
 
   useEffect(() => {
     fetch("/api/employees").then(res => res.json()).then(data => {
@@ -309,7 +311,7 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-semibold capitalize transition-all ${activeTab === tab ? "border-b-2 border-indigo-600 text-indigo-700" : "text-stone-500 hover:text-stone-800"}`}
           >
-            {tab === "settings" ? "General Settings" : tab === "users" ? "User Management" : tab === "stock" ? "Stock Management" : tab === "sales" ? "Sales & Returns" : "Demand ML"}
+            {tab === "settings" ? "General Settings" : tab === "users" ? "User Management" : tab === "stock" ? "Stock Management" : tab === "sales" ? "Bills & Returns" : "Demand ML"}
           </button>
         ))}
       </div>
@@ -738,37 +740,48 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
         {activeTab === "sales" && (
           <div className="grid grid-cols-1 gap-5">
             <section>
-              <SectionHeading title="Sales & Returns" hint="Process returns & issue credits" />
+              <SectionHeading title="Bills & Returns" hint="Click a bill to view details & process refunds" />
+
+              {/* Search Bar */}
+              <div className="relative mb-4">
+                <input
+                  type="text"
+                  placeholder="Search by Bill No (e.g. INV-00001)…"
+                  value={billSearch}
+                  onChange={e => setBillSearch(e.target.value)}
+                  className="w-full rounded-2xl border border-stone-200 bg-white px-5 py-3 pr-4 text-sm text-stone-700 outline-none focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100 transition-all"
+                />
+              </div>
+
               <div className={`${cardBase} overflow-hidden`}>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead className="bg-stone-50 text-stone-500 font-medium">
                       <tr>
                         <th className="px-6 py-4">Bill No</th>
+                        <th className="px-6 py-4">Customer</th>
                         <th className="px-6 py-4">Date</th>
                         <th className="px-6 py-4">Total Amount</th>
-                        <th className="px-6 py-4 text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100">
-                      {salesList.map((sale) => (
-                        <tr key={sale.id} className="hover:bg-stone-50/50 transition-colors">
-                          <td className="px-6 py-4 font-mono font-medium text-stone-800">{sale.billNo}</td>
-                          <td className="px-6 py-4 text-stone-600">{new Date(sale.created_at).toLocaleDateString()}</td>
-                          <td className="px-6 py-4 font-semibold text-emerald-600">₹{sale.total_amount.toFixed(2)}</td>
-                          <td className="px-6 py-4 text-right">
-                            <button
-                              onClick={() => setAuthPrompt({ action: "return", payload: { saleId: sale.id, amount: sale.total_amount, date: sale.created_at } })}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
-                            >
-                              Process Return
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {salesList.length === 0 && (
+                      {salesList
+                        .filter(s => !billSearch || s.billNo.toLowerCase().includes(billSearch.toLowerCase()))
+                        .map((sale) => (
+                          <tr
+                            key={sale.id}
+                            onClick={() => setSelectedBill(sale)}
+                            className="cursor-pointer hover:bg-indigo-50/60 transition-colors"
+                          >
+                            <td className="px-6 py-4 font-mono font-semibold text-indigo-700">{sale.billNo}</td>
+                            <td className="px-6 py-4 text-stone-600">{sale.customer_name || "—"}</td>
+                            <td className="px-6 py-4 text-stone-500">{new Date(sale.created_at).toLocaleDateString()}</td>
+                            <td className="px-6 py-4 font-semibold text-emerald-600">₹{sale.total_amount.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      {salesList.filter(s => !billSearch || s.billNo.toLowerCase().includes(billSearch.toLowerCase())).length === 0 && (
                         <tr>
-                          <td colSpan={4} className="px-6 py-8 text-center text-stone-400">No sales history found.</td>
+                          <td colSpan={4} className="px-6 py-8 text-center text-stone-400">No bills found.</td>
                         </tr>
                       )}
                     </tbody>
@@ -780,6 +793,75 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
         )}
       </div>
     </div>
+
+    {/* Bill Detail Modal */}
+    {selectedBill && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm">
+        <div className="relative w-full max-w-md max-h-[85vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-stone-100 px-6 py-4">
+            <div>
+              <h2 className="font-serif text-xl font-semibold text-stone-800">{selectedBill.billNo}</h2>
+              <p className="text-xs text-stone-400 mt-0.5">{new Date(selectedBill.created_at).toLocaleString()}</p>
+            </div>
+            <button onClick={() => setSelectedBill(null)} className="rounded-full p-2 text-stone-400 hover:bg-stone-100 transition-colors">✕</button>
+          </div>
+
+          {/* Customer Info */}
+          <div className="px-6 pt-5 pb-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-2">Customer</p>
+            <p className="text-sm font-medium text-stone-800">{selectedBill.customer_name || "Unknown"}</p>
+            {selectedBill.customer_phone && <p className="text-xs text-stone-500">{selectedBill.customer_phone}</p>}
+          </div>
+
+          {/* Items */}
+          <div className="px-6 pb-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-2">Items</p>
+            <div className="rounded-xl border border-stone-100 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-stone-50 text-stone-500">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-medium">Item</th>
+                    <th className="px-4 py-2 text-center font-medium">Qty</th>
+                    <th className="px-4 py-2 text-right font-medium">Price</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {(selectedBill.items || []).map((item: any, i: number) => (
+                    <tr key={i}>
+                      <td className="px-4 py-2 text-stone-800">{item.product_name || item.product_id}</td>
+                      <td className="px-4 py-2 text-center text-stone-600">{item.quantity}</td>
+                      <td className="px-4 py-2 text-right text-stone-700">₹{(item.price * item.quantity).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Total */}
+          <div className="px-6 py-3 flex justify-between items-center border-t border-dashed border-stone-200">
+            <span className="text-sm font-semibold text-stone-600">Total Paid</span>
+            <span className="font-serif text-xl font-bold text-emerald-600">₹{selectedBill.total_amount.toFixed(2)}</span>
+          </div>
+
+          {/* Refund Button */}
+          <div className="px-6 pb-6 pt-3">
+            <button
+              onClick={() => {
+                if (window.confirm(`Confirm refund of ₹${selectedBill.total_amount.toFixed(2)} for ${selectedBill.billNo}?\n\nThis will:\n• Restore all stock\n• Delete this bill\n• Generate a Return Credit Code`)) {
+                  setAuthPrompt({ action: "return", payload: { saleId: selectedBill.id, amount: selectedBill.total_amount, date: selectedBill.created_at } })
+                  setSelectedBill(null)
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 hover:bg-rose-100 transition-colors active:scale-[0.98]"
+            >
+              🔄 Process Refund · ₹{selectedBill.total_amount.toFixed(2)}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {credentialsPDF && (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm print:backdrop-blur-none print:bg-white print:p-0">
