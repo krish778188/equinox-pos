@@ -576,9 +576,6 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
                             <span className="rounded-full bg-stone-100/90 px-2.5 py-0.5 text-[11px] font-medium text-stone-600">
                               {member.role}
                             </span>
-                            <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                              {member.billedCustomers} Billed
-                            </span>
                           </div>
                         </div>
                       </div>
