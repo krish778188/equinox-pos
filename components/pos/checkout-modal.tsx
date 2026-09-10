@@ -21,6 +21,7 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess }: CheckoutMod
     phone: "",
     address: "",
     carryBags: 0,
+    discountCode: "",
   })
 
   if (!isOpen) return null
@@ -47,6 +48,7 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess }: CheckoutMod
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           items: finalItems,
+          discountCode: formData.discountCode,
           customer: {
             name: formData.name,
             phone: formData.phone,
@@ -107,6 +109,10 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess }: CheckoutMod
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-stone-600">Address (Optional)</label>
                 <textarea value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-400/10 resize-none" rows={2} placeholder="123 Main St..." />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-stone-600">Discount / Return Code (Optional)</label>
+                <input type="text" value={formData.discountCode} onChange={e => setFormData({...formData, discountCode: e.target.value})} className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-400/10" placeholder="e.g. RET-1234" />
               </div>
               <div className="flex items-center justify-between rounded-xl border border-stone-200 p-4">
                 <div>
