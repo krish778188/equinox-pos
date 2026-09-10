@@ -179,6 +179,7 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
       const data = await res.json()
       if(data.success) {
         alert(`Return Approved! Discount Code for customer: ${data.returnCode}\nAmount: ${payload.amount}`)
+        setSalesList(salesList.filter(s => s.id !== payload.saleId))
       } else {
         alert(data.error || "Failed to process return")
       }
