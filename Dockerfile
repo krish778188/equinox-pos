@@ -30,11 +30,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/backend/pos_backend ./backend/pos_backend
 COPY --from=builder /app/schema.sql ./schema.sql
+COPY --from=builder /app/pos.db ./pos.db
 COPY --from=builder /app/init-db.js ./init-db.js
 
 # Create data directory for persistent SQLite storage
 RUN mkdir -p /data
-ENV DB_PATH=/data/pos.db
+ENV DB_PATH=./pos.db
 
 EXPOSE 3000
 CMD ["sh", "-c", "node init-db.js && npm start"]
