@@ -31,6 +31,32 @@ export async function POST(req: Request) {
       )
     })
 
+    // Fetch line items for this sale to restore stock
+    const lineItems = await new Promise<any[]>((resolve, reject) => {
+      db.all('SELECT product_id, quantity FROM Line_Items WHERE sale_id = ?', [saleId], (err, rows) => {
+        if (err) return reject(err)
+        resolve(rows)
+      })
+    })
+
+    // Restore stock
+    const restoreStmt = db.prepare('UPDATE Products SET stock = stock + ? WHERE id = ?')
+    for (const item of lineItems) {
+      restoreStmt.run(item.quantity, item.product_id)
+    }
+    restoreStmt.finalize()
+
+    // Delete the bill and its line items
+    await new Promise<void>((resolve, reject) => {
+      db.run('DELETE FROM Line_Items WHERE sale_id = ?', [saleId], (err) => {
+        if (err) return reject(err)
+        db.run('DELETE FROM Sales WHERE id = ?', [saleId], (err2) => {
+          if (err2) return reject(err2)
+          resolve()
+        })
+      })
+    })
+
     db.close()
     
     return NextResponse.json({ success: true, returnCode })
