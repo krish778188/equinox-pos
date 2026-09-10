@@ -2,6 +2,7 @@
 
 import { Search, Plus } from "lucide-react"
 import { formatCurrency, type Product } from "@/lib/pos-data"
+import { useEffect } from "react"
 
 function stockBadge(stock: number) {
   if (stock === 0) {
@@ -65,6 +66,40 @@ export function ProductGrid({
   onQueryChange: (value: string) => void
   onAdd: (p: Product) => void
 }) {
+  useEffect(() => {
+    let barcode = ""
+    let lastTime = 0
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is intentionally typing in a search bar or input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      const now = Date.now()
+      if (now - lastTime > 50) {
+        barcode = "" // Reset if typing is too slow (human typing), scanners are extremely fast
+      }
+      lastTime = now
+
+      if (e.key === "Enter") {
+        if (barcode.length > 0) {
+          // Find product by ID
+          const product = products.find(p => p.id.toLowerCase() === barcode.toLowerCase())
+          if (product && product.stock > 0) {
+            onAdd(product)
+          }
+          barcode = ""
+        }
+      } else if (e.key.length === 1) { // Collect normal characters
+        barcode += e.key
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [products, onAdd])
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="relative mb-6">
