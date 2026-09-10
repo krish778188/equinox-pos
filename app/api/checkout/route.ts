@@ -55,8 +55,8 @@ export async function POST(req: Request) {
 
       const saleId = await new Promise<number>((resolve, reject) => {
         db.run(
-          'INSERT INTO Sales (total_amount) VALUES (?)',
-          [grandTotal],
+          'INSERT INTO Sales (total_amount, customer_name, customer_phone) VALUES (?, ?, ?)',
+          [grandTotal, customer?.name || null, customer?.phone || null],
           function (err) {
             if (err) return reject(err)
             resolve(this.lastID)
