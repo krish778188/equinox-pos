@@ -5,6 +5,10 @@ export async function GET() {
   try {
     const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
 
+    // Safely add columns if they don't exist yet (for existing Render deployments)
+    await new Promise<void>((resolve) => { db.run('ALTER TABLE Sales ADD COLUMN customer_name VARCHAR(255)', () => resolve()) })
+    await new Promise<void>((resolve) => { db.run('ALTER TABLE Sales ADD COLUMN customer_phone VARCHAR(50)', () => resolve()) })
+
     const sales = await new Promise<any[]>((resolve, reject) => {
       db.all('SELECT id, total_amount, customer_name, customer_phone, created_at FROM Sales ORDER BY created_at DESC', (err, rows) => {
         if (err) return reject(err)

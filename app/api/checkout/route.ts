@@ -53,6 +53,14 @@ export async function POST(req: Request) {
     if (result.status === "success") {
       const grandTotal = result.receipt.grand_total
 
+      // Safely add columns if they don't exist yet (for existing Render deployments)
+      await new Promise<void>((resolve) => {
+        db.run('ALTER TABLE Sales ADD COLUMN customer_name VARCHAR(255)', () => resolve())
+      })
+      await new Promise<void>((resolve) => {
+        db.run('ALTER TABLE Sales ADD COLUMN customer_phone VARCHAR(50)', () => resolve())
+      })
+
       const saleId = await new Promise<number>((resolve, reject) => {
         db.run(
           'INSERT INTO Sales (total_amount, customer_name, customer_phone) VALUES (?, ?, ?)',
