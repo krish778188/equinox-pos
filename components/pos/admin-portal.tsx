@@ -84,7 +84,7 @@ const statusDot: Record<string, string> = {
 export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
   const [localStaff, setLocalStaff] = useState<any[]>([])
   const [newEmployee, setNewEmployee] = useState({ name: "", role: "Cashier" })
-  const [activeTab, setActiveTab] = useState<"settings" | "users" | "stock" | "demand">("settings")
+  const [activeTab, setActiveTab] = useState<"settings" | "users" | "stock" | "demand" | "sales">("settings")
   const [isProcessing, setIsProcessing] = useState(false)
   const [credentialsPDF, setCredentialsPDF] = useState<any>(null)
 
@@ -101,12 +101,12 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
   const [isAuthing, setIsAuthing] = useState(false)
   const [discountType, setDiscountType] = useState("FLAT_THRESHOLD")
 
+  const [salesList, setSalesList] = useState<any[]>([])
+
   useEffect(() => {
-    fetch("/api/employees")
-      .then(res => res.json())
-      .then(data => {
-        if (data.employees) {
-          setLocalStaff(data.employees.map((e: any) => ({
+    fetch("/api/employees").then(res => res.json()).then(data => {
+      if(data.employees) {
+        setLocalStaff(data.employees.map((e: any) => ({
             ...e,
             initials: e.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().substring(0,2),
             status: "offline",
@@ -114,6 +114,9 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
           })))
         }
       })
+    fetch("/api/sales").then(res => res.json()).then(data => {
+      if(data.sales) setSalesList(data.sales)
+    })
 
     fetch("/api/admin-stats")
       .then(res => res.json())
@@ -166,6 +169,27 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
     }
   }
 
+  const executeReturn = async (payload: any) => {
+    try {
+      const res = await fetch("/api/returns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      const data = await res.json()
+      if(data.success) {
+        alert(`Return Approved! Discount Code for customer: ${data.returnCode}\nAmount: ${payload.amount}`)
+      } else {
+        alert(data.error || "Failed to process return")
+      }
+    } catch(e) {
+      alert("Error processing return")
+    } finally {
+      setAuthPrompt(null)
+      setAuthPassword("")
+    }
+  }
+
   const executeAddDiscount = async (payload: any) => {
     try {
       const res = await fetch("/api/discounts", {
@@ -203,6 +227,8 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
           await executeRemoveEmployee(authPrompt.targetId)
         } else if (authPrompt?.action === "discount" && authPrompt.payload) {
           await executeAddDiscount(authPrompt.payload)
+        } else if (authPrompt?.action === "return" && authPrompt.payload) {
+          await executeReturn(authPrompt.payload)
         }
       } else {
         setAuthError("Incorrect password")
@@ -276,13 +302,13 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
     <>
     <div className="flex h-full flex-col">
       <div className="mb-6 flex gap-2 border-b border-stone-200 pb-2">
-        {(["settings", "users", "stock", "demand"] as const).map(tab => (
+        {(["settings", "users", "stock", "demand", "sales"] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-semibold capitalize transition-all ${activeTab === tab ? "border-b-2 border-indigo-600 text-indigo-700" : "text-stone-500 hover:text-stone-800"}`}
           >
-            {tab === "settings" ? "General Settings" : tab === "users" ? "User Management" : tab === "stock" ? "Stock Management" : "Demand ML"}
+            {tab === "settings" ? "General Settings" : tab === "users" ? "User Management" : tab === "stock" ? "Stock Management" : tab === "sales" ? "Sales & Returns" : "Demand ML"}
           </button>
         ))}
       </div>
@@ -705,6 +731,50 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === "sales" && (
+          <div className="grid grid-cols-1 gap-5">
+            <section>
+              <SectionHeading title="Sales & Returns" hint="Process returns & issue credits" />
+              <div className={`${cardBase} overflow-hidden`}>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-stone-50 text-stone-500 font-medium">
+                      <tr>
+                        <th className="px-6 py-4">Bill No</th>
+                        <th className="px-6 py-4">Date</th>
+                        <th className="px-6 py-4">Total Amount</th>
+                        <th className="px-6 py-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {salesList.map((sale) => (
+                        <tr key={sale.id} className="hover:bg-stone-50/50 transition-colors">
+                          <td className="px-6 py-4 font-mono font-medium text-stone-800">{sale.billNo}</td>
+                          <td className="px-6 py-4 text-stone-600">{new Date(sale.created_at).toLocaleDateString()}</td>
+                          <td className="px-6 py-4 font-semibold text-emerald-600">₹{sale.total_amount.toFixed(2)}</td>
+                          <td className="px-6 py-4 text-right">
+                            <button
+                              onClick={() => setAuthPrompt({ action: "return", payload: { saleId: sale.id, amount: sale.total_amount, date: sale.created_at } })}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
+                            >
+                              Process Return
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {salesList.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-8 text-center text-stone-400">No sales history found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
           </div>
         )}
       </div>
