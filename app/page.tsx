@@ -32,19 +32,27 @@ export default function Page() {
   const handleLoginSuccess = (user: any) => {
     localStorage.setItem("pos_user", JSON.stringify(user))
     setLoggedInUser(user)
+    if (user.role === "Admin" || user.role === "Store Manager") {
+      setActive("admin")
+    } else {
+      setActive("checkout")
+    }
   }
 
   const handleLogout = () => {
     localStorage.removeItem("pos_user")
     setLoggedInUser(null)
+    setActive("checkout")
   }
 
   const [products, setProducts] = useState<Product[]>([])
 
   useEffect(() => {
     if (loggedInUser) {
-      if (loggedInUser.role === "Admin" && active !== "admin") {
+      if ((loggedInUser.role === "Admin" || loggedInUser.role === "Store Manager") && active !== "admin") {
         setActive("admin")
+      } else if (loggedInUser.role !== "Admin" && loggedInUser.role !== "Store Manager" && active === "admin") {
+        setActive("checkout")
       }
       fetch("/api/products")
         .then(res => res.json())
