@@ -36,6 +36,7 @@ export function EmployeeLogin({ onSuccess }: { onSuccess: (user: any) => void })
   }
 
   return (
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-[#FAF9F6] p-4 text-stone-800">
       <div className="w-full max-w-sm rounded-3xl border border-white/70 bg-white/70 p-8 shadow-[0_20px_50px_rgba(120,90,60,0.08),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-xl">
         <div className="mb-6 flex flex-col items-center text-center">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(120deg,#fb7185,#fdba74)] text-white shadow-lg">
@@ -94,7 +95,7 @@ export function EmployeeLogin({ onSuccess }: { onSuccess: (user: any) => void })
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Log In"}
           </button>
-      </form>
+        </form>
       </div>
       <div className="mt-6 text-center">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">Made By</p>
