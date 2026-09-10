@@ -9,16 +9,21 @@ const execAsync = promisify(exec)
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { items, customer, bags } = body
+    const { items, customer, bags, discountCode } = body
     
     const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
 
     // Fetch active discount
-    const activeDiscount = await new Promise<any>((resolve) => {
-      db.get('SELECT * FROM Discounts WHERE active = 1 ORDER BY id DESC LIMIT 1', (err, row) => {
-        resolve(row || null)
+    let activeDiscount = null
+    if (discountCode) {
+      activeDiscount = await new Promise<any>((resolve) => {
+        db.get('SELECT * FROM Discounts WHERE active = 1 AND name = ?', [discountCode], (err, row) => resolve(row || null))
       })
-    })
+    } else {
+      activeDiscount = await new Promise<any>((resolve) => {
+        db.get('SELECT * FROM Discounts WHERE active = 1 AND name NOT LIKE "RET-%" ORDER BY id DESC LIMIT 1', (err, row) => resolve(row || null))
+      })
+    }
 
     const payload = {
       items: items.map((item: any) => ({
@@ -68,13 +73,18 @@ export async function POST(req: Request) {
       }
       stmt.finalize()
 
+      if (discountCode) {
+        db.run('UPDATE Discounts SET active = 0 WHERE name = ?', [discountCode])
+      }
+
       db.close()
       
-      result.receipt.bill_no = `INV-${saleId.toString().padStart(5, '0')}`
+      const billNo = `INV-${saleId.toString().padStart(5, '0')}`
+      result.receipt.bill_no = billNo
       if (customer) result.receipt.customer = customer
       if (bags) result.receipt.bags = bags
 
-      return NextResponse.json(result)
+      return NextResponse.json({ ...result, billNo })
     } else {
       return NextResponse.json({ error: "Checkout calculation failed" }, { status: 500 })
     }
