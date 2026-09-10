@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS Products (
 CREATE TABLE IF NOT EXISTS Sales (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     total_amount DECIMAL(10, 2) NOT NULL,
+    customer_name VARCHAR(255),
+    customer_phone VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
