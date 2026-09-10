@@ -5,12 +5,13 @@ export async function POST(req: Request) {
   try {
     const { saleId, amount, date } = await req.json()
     
-    // Check if date is today
-    const saleDate = new Date(date).toISOString().split('T')[0]
-    const today = new Date().toISOString().split('T')[0]
+    // Check if bill is within 7 days
+    const saleDate = new Date(date)
+    const today = new Date()
+    const diffDays = Math.floor((today.getTime() - saleDate.getTime()) / (1000 * 60 * 60 * 24))
     
-    if (saleDate !== today) {
-      return NextResponse.json({ success: false, error: "Returns can only be processed on the same day as the original bill." }, { status: 400 })
+    if (diffDays > 7) {
+      return NextResponse.json({ success: false, error: `Return period expired. This bill is ${diffDays} days old. Returns are only accepted within 7 days of purchase.` }, { status: 400 })
     }
 
     const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
