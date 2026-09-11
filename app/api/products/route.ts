@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import sqlite3 from "@/lib/db"
+import sqlite3 from "sqlite3"
 
 export async function GET() {
   try {

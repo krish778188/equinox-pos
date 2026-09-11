@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
-import sqlite3 from "@/lib/db"
+import sqlite3 from "sqlite3"
 
-export async function DELETE(request: Request, context: any) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await context.params
+    const { id } = params
     const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
     
     await new Promise((resolve, reject) => {
