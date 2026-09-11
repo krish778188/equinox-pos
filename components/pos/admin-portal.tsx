@@ -83,7 +83,8 @@ const statusDot: Record<string, string> = {
 
 export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
   const [localStaff, setLocalStaff] = useState<any[]>([])
-  const [newEmployee, setNewEmployee] = useState({ name: "", role: "Cashier" })
+  const [newEmployee, setNewEmployee] = useState({ name: "", role: "Cashier", phone: "", address: "", idType: "Aadhar Card", govtId: "" })
+  const [selectedEmployee, setSelectedEmployee] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<"settings" | "users" | "stock" | "demand" | "sales">("settings")
   const [isProcessing, setIsProcessing] = useState(false)
   const [credentialsPDF, setCredentialsPDF] = useState<any>(null)
@@ -158,7 +159,7 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
       }])
       
       setCredentialsPDF(data)
-      setNewEmployee({ name: "", role: "Cashier" })
+      setNewEmployee({ name: "", role: "Cashier", phone: "", address: "", idType: "Aadhar Card", govtId: "" })
     } catch (err) {
       console.error(err)
       alert("Error adding employee")
@@ -564,7 +565,8 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
                   {localStaff.map((member: any) => (
                     <div
                       key={member.id}
-                      className={`${cardBase} group flex flex-col gap-4 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_rgba(120,90,60,0.12)]`}
+                      onClick={() => setSelectedEmployee(member)}
+                      className={`${cardBase} group flex flex-col gap-4 p-4 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_rgba(120,90,60,0.12)]`}
                     >
                       <div className="flex items-center gap-4">
                         <div className="relative shrink-0">
@@ -592,7 +594,10 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
                       <div className="flex justify-end pt-2 border-t border-stone-100">
                         <button
                           type="button"
-                          onClick={() => handleRemoveEmployee(member.id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRemoveEmployee(member.id)
+                          }}
                           className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-all hover:bg-rose-100 active:scale-[0.96]"
                         >
                           Remove User
@@ -616,6 +621,25 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
                     <Field label="Full Name">
                       <input required value={newEmployee.name} onChange={e => setNewEmployee({...newEmployee, name: e.target.value})} className={inputClass} placeholder="Jane Doe" />
                     </Field>
+                    <Field label="Phone No">
+                      <input required type="tel" value={newEmployee.phone} onChange={e => setNewEmployee({...newEmployee, phone: e.target.value})} className={inputClass} placeholder="1234567890" />
+                    </Field>
+                    <Field label="Address">
+                      <input required value={newEmployee.address} onChange={e => setNewEmployee({...newEmployee, address: e.target.value})} className={inputClass} placeholder="123 Main St..." />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="ID Type">
+                        <select value={newEmployee.idType} onChange={e => setNewEmployee({...newEmployee, idType: e.target.value})} className={inputClass}>
+                          <option>Aadhar Card</option>
+                          <option>PAN Card</option>
+                          <option>Voter ID</option>
+                          <option>Passport</option>
+                        </select>
+                      </Field>
+                      <Field label="Govt ID">
+                        <input required value={newEmployee.govtId} onChange={e => setNewEmployee({...newEmployee, govtId: e.target.value})} className={inputClass} placeholder="ID Number" />
+                      </Field>
+                    </div>
                     <Field label="Role">
                       <select value={newEmployee.role} onChange={e => setNewEmployee({...newEmployee, role: e.target.value})} className={inputClass}>
                         <option>Cashier</option>
@@ -959,6 +983,63 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
             #credentials-pdf { position: fixed; left: 0; top: 0; width: 100%; height: 100%; padding: 40px; background: white; z-index: 99999; overflow: visible; }
           }
         `}} />
+      </div>
+    )}
+
+    {/* Employee Details Modal */}
+    {selectedEmployee && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm">
+        <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+          <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-stone-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
+                style={{ background: selectedEmployee.accent }}
+              >
+                {selectedEmployee.initials}
+              </div>
+              <div>
+                <h3 className="font-bold text-stone-800 text-lg leading-tight">{selectedEmployee.name}</h3>
+                <span className="text-sm text-stone-500 font-medium">{selectedEmployee.role}</span>
+              </div>
+            </div>
+            <button onClick={() => setSelectedEmployee(null)} className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-6 flex-1 overflow-y-auto">
+            <div className="space-y-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Employee ID</p>
+                <p className="text-sm text-stone-800 font-medium">{selectedEmployee.id}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Phone Number</p>
+                <p className="text-sm text-stone-800 font-medium">{selectedEmployee.phone || "Not provided"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Address</p>
+                <p className="text-sm text-stone-800 font-medium leading-relaxed">{selectedEmployee.address || "Not provided"}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">ID Type</p>
+                  <p className="text-sm text-stone-800 font-medium">{selectedEmployee.id_type || selectedEmployee.idType || "Not provided"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Govt ID</p>
+                  <p className="text-sm text-stone-800 font-medium">{selectedEmployee.govt_id || selectedEmployee.govtId || "Not provided"}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Employed Since</p>
+                <p className="text-sm text-stone-800 font-medium">
+                  {selectedEmployee.created_at ? new Date(selectedEmployee.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : "Not available"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )}
     {authPrompt && (
