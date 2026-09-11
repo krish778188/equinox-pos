@@ -2,7 +2,9 @@
 
 import { useState } from "react"
 import { X, Loader2, Printer } from "lucide-react"
-import { formatCurrency, type CartItem } from "@/lib/pos-data"
+import { formatCurrency, type Product } from "@/lib/pos-data"
+
+type CartItem = Product & { quantity: number }
 
 type CheckoutModalProps = {
   items: CartItem[]
@@ -81,7 +83,7 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess }: CheckoutMod
   const handleDone = () => {
     onSuccess()
     setStep("form")
-    setFormData({ name: "", phone: "", address: "", carryBags: 0 })
+    setFormData({ name: "", phone: "", address: "", carryBags: 0, discountCode: "" })
     setReceipt(null)
   }
 
