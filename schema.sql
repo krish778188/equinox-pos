@@ -29,5 +29,10 @@ CREATE TABLE IF NOT EXISTS Employees (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL,
-    password VARCHAR(255) NOT NULL
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    address TEXT,
+    id_type VARCHAR(50),
+    govt_id VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
