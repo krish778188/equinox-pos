@@ -21,16 +21,19 @@ export class Database {
     }
   }
 
-  async get(sql: string, params: any[], callback: (err: any, row: any) => void) {
+  async get(sql: string, paramsOrCallback: any, callback?: any) {
+    const params = typeof paramsOrCallback === 'function' ? [] : paramsOrCallback
+    const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback
+
     if (client) {
       try {
         const result = await client.execute({ sql, args: params })
-        callback(null, result.rows[0])
+        cb(null, result.rows[0])
       } catch (e) {
-        callback(e, null)
+        cb(e, null)
       }
     } else {
-      this.db.get(sql, params, callback)
+      this.db.get(sql, params, cb)
     }
   }
 
