@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import path from 'path'
-import sqlite3 from 'sqlite3'
+import sqlite3 from '@/lib/db'
 
 const execAsync = promisify(exec)
 
