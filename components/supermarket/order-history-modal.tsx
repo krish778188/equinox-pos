@@ -49,6 +49,23 @@ export function OrderHistoryModal({
       setIsReturnPromptOpen(false)
       setReturnSuccessMsg("")
       setReturnErrorMsg("")
+
+      // Real-time polling while order history is open
+      const interval = setInterval(() => {
+        if (!user) return
+        const param = user.email ? `email=${encodeURIComponent(user.email)}` : `phone=${encodeURIComponent(user.mobile || "")}`
+        fetch(`/api/sales?${param}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.sales) {
+              setOrders(data.sales)
+              setSelectedOrder(prev => prev ? (data.sales.find((s: any) => s.id === prev.id) || prev) : null)
+            }
+          })
+          .catch(console.error)
+      }, 3500)
+
+      return () => clearInterval(interval)
     }
   }, [isOpen, user])
 

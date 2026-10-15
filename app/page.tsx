@@ -59,22 +59,34 @@ export default function Page() {
         setActive("settings")
       }
       
-      fetch("/api/products")
-        .then(res => res.json())
-        .then(data => {
-          if (data.products) setProducts(data.products)
-        })
-
-      if (isAdmin) {
-        fetch("/api/returns")
+      const refreshData = () => {
+        fetch("/api/products")
           .then(res => res.json())
           .then(data => {
-            if (data.success && data.requests) {
-              const pending = (data.requests as any[]).filter(r => r.status === "Pending").length
-              setPendingReturnsCount(pending)
-            }
+            if (data.products) setProducts(data.products)
           })
-          .catch(console.error)
+
+        if (isAdmin) {
+          fetch("/api/returns")
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.requests) {
+                const pending = (data.requests as any[]).filter(r => r.status === "Pending").length
+                setPendingReturnsCount(pending)
+              }
+            })
+            .catch(console.error)
+        }
+      }
+
+      refreshData()
+
+      const interval = setInterval(refreshData, 4000)
+      window.addEventListener("focus", refreshData)
+
+      return () => {
+        clearInterval(interval)
+        window.removeEventListener("focus", refreshData)
       }
     }
   }, [loggedInUser])

@@ -193,6 +193,24 @@ export function AdminPortal({
   useEffect(() => {
     fetchReturns()
     fetchStockAndSales()
+
+    // Real-time polling every 4 seconds
+    const interval = setInterval(() => {
+      fetchReturns()
+      fetchStockAndSales()
+    }, 4000)
+
+    // Immediate refresh when tab receives focus
+    const handleFocus = () => {
+      fetchReturns()
+      fetchStockAndSales()
+    }
+    window.addEventListener("focus", handleFocus)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener("focus", handleFocus)
+    }
   }, [])
 
   const handleApproveReturnPrompt = (req: any) => {
