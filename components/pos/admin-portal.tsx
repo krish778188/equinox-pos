@@ -1192,7 +1192,8 @@ export function AdminPortal({
                           !billSearch || 
                           (s.billNo && s.billNo.toLowerCase().includes(billSearch.toLowerCase())) ||
                           (s.customer_name && s.customer_name.toLowerCase().includes(billSearch.toLowerCase())) ||
-                          (s.payment_id && s.payment_id.toLowerCase().includes(billSearch.toLowerCase()))
+                          (s.payment_id && s.payment_id.toLowerCase().includes(billSearch.toLowerCase())) ||
+                          (s.upi_ref_id && s.upi_ref_id.toLowerCase().includes(billSearch.toLowerCase()))
                         )
                         .map((sale) => (
                           <tr
@@ -1227,9 +1228,14 @@ export function AdminPortal({
                                 <span className="font-semibold text-stone-800 leading-tight truncate">
                                   {sale.payment_method?.replace(" (krishraj453@okicici)", "") || "UPI"}
                                 </span>
-                                <span className="font-mono text-[10px] text-emerald-800 font-bold mt-0.5 leading-tight truncate">
-                                  {sale.payment_id || "N/A"}
+                                <span className="font-mono text-[10px] text-emerald-800 font-bold mt-0.5 leading-tight truncate" title="System Payment ID">
+                                  Sys: {sale.payment_id || "N/A"}
                                 </span>
+                                {sale.upi_ref_id && sale.upi_ref_id !== "N/A" && (
+                                  <span className="font-mono text-[10px] text-purple-700 font-bold leading-tight truncate" title="Customer Entered UPI Reference / UTR">
+                                    UTR: {sale.upi_ref_id}
+                                  </span>
+                                )}
                               </div>
                             </td>
                             <td className="px-3.5 py-3 align-middle text-center whitespace-nowrap">
@@ -1333,11 +1339,19 @@ export function AdminPortal({
                   <span className="font-bold text-stone-800">{selectedBill.payment_method || "UPI (krishraj453@okicici)"}</span>
                 </div>
                 <div>
-                  <span className="text-stone-400 block font-semibold text-[10px] uppercase">Payment / Ref ID</span>
+                  <span className="text-stone-400 block font-semibold text-[10px] uppercase">System Payment ID</span>
                   <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block">
                     {selectedBill.payment_id || "N/A"}
                   </span>
                 </div>
+                {selectedBill.upi_ref_id && selectedBill.upi_ref_id !== "N/A" && (
+                  <div className="col-span-2 pt-1 border-t border-stone-100 flex items-center justify-between">
+                    <span className="text-stone-500 font-semibold text-[11px]">Customer UPI Ref / UTR:</span>
+                    <span className="font-mono font-bold text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded border border-purple-200">
+                      {selectedBill.upi_ref_id}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

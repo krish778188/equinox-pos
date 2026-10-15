@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Loader2, Printer, CheckCircle2, ShoppingBag, ShieldCheck, MapPin, QrCode, Copy, Check, Smartphone, Banknote, CreditCard, ChevronRight } from "lucide-react"
+import { X, Loader2, Printer, CheckCircle2, ShoppingBag, ShieldCheck, MapPin, QrCode, Copy, Check, Smartphone, Banknote, AlertCircle, ChevronRight } from "lucide-react"
 import { formatCurrency, type Product } from "@/lib/pos-data"
 import QRCode from "qrcode"
 
@@ -25,11 +25,12 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
   const [receipt, setReceipt] = useState<any>(null)
   const [saveAsDefault, setSaveAsDefault] = useState(true)
 
-  // Payment Options
-  const [paymentMethod, setPaymentMethod] = useState<"UPI" | "COD" | "CARD">("UPI")
+  // Payment Options: Strictly UPI and Cash on Delivery
+  const [paymentMethod, setPaymentMethod] = useState<"UPI" | "COD">("UPI")
   const [qrDataUrl, setQrDataUrl] = useState<string>("")
   const [copiedUpi, setCopiedUpi] = useState(false)
   const [customUtr, setCustomUtr] = useState("")
+  const [utrError, setUtrError] = useState("")
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -83,6 +84,20 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
 
   const handleProcessPayment = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Enforce compulsory UPI Reference Number
+    if (paymentMethod === "UPI") {
+      const cleanUtr = customUtr.trim()
+      if (!cleanUtr) {
+        setUtrError("UPI Reference / UTR Number is compulsory to place this order.")
+        return
+      }
+      if (cleanUtr.length < 6) {
+        setUtrError("Please enter a valid 12-digit UPI Reference / UTR number (at least 6 characters).")
+        return
+      }
+    }
+    setUtrError("")
     setIsProcessing(true)
 
     try {
@@ -104,22 +119,13 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
         onUpdateUser?.(updated)
       }
 
-      // Generate unique payment ID based on chosen method
-      let finalPaymentMethodLabel = "UPI (krishraj453@okicici)"
-      let generatedPaymentId = customUtr.trim()
-
-      if (paymentMethod === "UPI") {
-        finalPaymentMethodLabel = `UPI (${STORE_UPI_ID})`
-        if (!generatedPaymentId) {
-          generatedPaymentId = `UPI-TXN-${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`
-        }
-      } else if (paymentMethod === "COD") {
-        finalPaymentMethodLabel = "Cash on Delivery"
-        generatedPaymentId = `COD-PAY-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
-      } else {
-        finalPaymentMethodLabel = "Debit / Credit Card (Test)"
-        generatedPaymentId = `CARD-TXN-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
-      }
+      // Generate System Payment ID & capture user-entered UPI reference
+      const isUpi = paymentMethod === "UPI"
+      const finalPaymentMethodLabel = isUpi ? `UPI (${STORE_UPI_ID})` : "Cash on Delivery"
+      const systemPaymentId = isUpi
+        ? `EQX-UPI-${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`
+        : `EQX-COD-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
+      const userUpiRefId = isUpi ? customUtr.trim() : "N/A"
 
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -134,11 +140,15 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
           },
           deliveryAddress: formData.address,
           paymentMethod: finalPaymentMethodLabel,
-          paymentId: generatedPaymentId,
+          paymentId: systemPaymentId,
+          upiRefId: userUpiRefId,
         }),
       })
 
-      if (!response.ok) throw new Error("Failed to process order")
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || "Failed to process order")
+      }
 
       const data = await response.json()
       setReceipt({
@@ -147,13 +157,14 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
         orderId: data.orderId || `ORD-${data.billNo}`,
         status: data.status || "Order Placed",
         payment_method: finalPaymentMethodLabel,
-        payment_id: generatedPaymentId,
+        payment_id: systemPaymentId,
+        upi_ref_id: userUpiRefId,
         customer: formData,
       })
       setStep("receipt")
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
-      alert("Error placing order. Please try again.")
+      alert(error.message || "Error placing order. Please try again.")
     } finally {
       setIsProcessing(false)
     }
@@ -181,7 +192,7 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-100 bg-white/95 px-6 py-4 backdrop-blur-md">
               <div>
                 <h2 className="font-serif text-xl font-bold text-stone-900">Checkout &amp; Payment</h2>
-                <p className="text-xs text-stone-400">Direct 0% fee UPI, Cash on Delivery or Card</p>
+                <p className="text-xs text-stone-400">Direct 0% fee UPI &amp; Cash on Delivery</p>
               </div>
               <button onClick={onClose} className="rounded-full p-2 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors">
                 <X className="h-5 w-5" />
@@ -278,10 +289,10 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                   Select Payment Option (0% Extra Fees)
                 </label>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod("UPI")}
+                    onClick={() => { setPaymentMethod("UPI"); setUtrError(""); }}
                     className={`flex flex-col items-center justify-center gap-1 rounded-2xl border p-3 text-center transition-all ${
                       paymentMethod === "UPI"
                         ? "border-emerald-600 bg-emerald-50/80 text-emerald-900 shadow-sm ring-2 ring-emerald-500/20"
@@ -289,13 +300,13 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                     }`}
                   >
                     <QrCode className="h-5 w-5 text-emerald-700" />
-                    <span className="text-xs font-bold">UPI / QR</span>
-                    <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.2 rounded">Free · 0%</span>
+                    <span className="text-xs font-bold">UPI / QR Payment</span>
+                    <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.2 rounded">Instant · 0% Fee</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod("COD")}
+                    onClick={() => { setPaymentMethod("COD"); setUtrError(""); }}
                     className={`flex flex-col items-center justify-center gap-1 rounded-2xl border p-3 text-center transition-all ${
                       paymentMethod === "COD"
                         ? "border-emerald-600 bg-emerald-50/80 text-emerald-900 shadow-sm ring-2 ring-emerald-500/20"
@@ -304,21 +315,7 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                   >
                     <Banknote className="h-5 w-5 text-stone-700" />
                     <span className="text-xs font-bold">Cash on Delivery</span>
-                    <span className="text-[9px] text-stone-400">Pay on arrival</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("CARD")}
-                    className={`flex flex-col items-center justify-center gap-1 rounded-2xl border p-3 text-center transition-all ${
-                      paymentMethod === "CARD"
-                        ? "border-emerald-600 bg-emerald-50/80 text-emerald-900 shadow-sm ring-2 ring-emerald-500/20"
-                        : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
-                    }`}
-                  >
-                    <CreditCard className="h-5 w-5 text-stone-700" />
-                    <span className="text-xs font-bold">Test Gateway</span>
-                    <span className="text-[9px] text-stone-400">Instant Demo</span>
+                    <span className="text-[9px] text-stone-400">Pay on doorstep</span>
                   </button>
                 </div>
 
@@ -370,18 +367,41 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                         <span>Pay directly in UPI App ({formatCurrency(grandTotal)})</span>
                       </a>
 
-                      {/* Optional UTR / Reference ID Field */}
-                      <div className="mt-3.5 w-full text-left">
-                        <label className="block text-[10px] font-semibold text-stone-500 mb-1">
-                          UPI Reference / UTR Number (Optional)
-                        </label>
+                      {/* Compulsory UTR / Reference ID Field */}
+                      <div className="mt-4 w-full text-left rounded-xl bg-white p-3.5 border border-emerald-200 shadow-xs">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[11px] font-bold text-stone-800 flex items-center gap-1">
+                            <span>UPI Reference / UTR Number</span>
+                            <span className="text-rose-600 font-extrabold">* (Compulsory)</span>
+                          </label>
+                          <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60">
+                            12 Digits
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-stone-500 mb-2 leading-relaxed">
+                          After completing payment of {formatCurrency(grandTotal)} in your UPI app, copy &amp; paste the 12-digit UTR / Ref No from your payment receipt here. <strong>Orders cannot be placed without this reference.</strong>
+                        </p>
                         <input
                           type="text"
+                          required
                           value={customUtr}
-                          onChange={e => setCustomUtr(e.target.value)}
-                          placeholder="e.g. 428910284910 (or leave blank to auto-generate)"
-                          className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs text-stone-800 focus:border-emerald-500 focus:outline-none"
+                          onChange={e => {
+                            setCustomUtr(e.target.value)
+                            if (utrError) setUtrError("")
+                          }}
+                          placeholder="e.g. 428910284910 (12-digit UPI Ref / UTR)"
+                          className={`w-full rounded-xl border px-3 py-2 text-xs font-mono font-bold text-stone-900 outline-none transition ${
+                            utrError 
+                              ? "border-rose-400 bg-rose-50/40 focus:ring-2 focus:ring-rose-200" 
+                              : "border-stone-200 bg-stone-50/40 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
+                          }`}
                         />
+                        {utrError && (
+                          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                            <span>{utrError}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -397,22 +417,10 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                     <p className="text-[11px] leading-relaxed">
                       You can pay via Cash or scan the delivery executive's UPI QR code upon arrival at your doorstep. Exact change is appreciated!
                     </p>
-                    <div className="mt-2 text-[10px] font-semibold text-stone-400">
-                      Payment ID: <span className="font-mono text-stone-700">COD-PAY-PENDING</span>
+                    <div className="mt-2 text-[10px] font-semibold text-stone-500 flex items-center justify-between">
+                      <span>System Payment ID: <span className="font-mono font-bold text-stone-700">Auto-Generated</span></span>
+                      <span className="text-emerald-700">UPI Ref: Not Required</span>
                     </div>
-                  </div>
-                )}
-
-                {/* Test Card View */}
-                {paymentMethod === "CARD" && (
-                  <div className="mt-3 rounded-2xl border border-stone-200 bg-stone-50 p-4 text-xs text-stone-600 space-y-1.5">
-                    <p className="font-bold text-stone-900 flex items-center gap-1.5">
-                      <CreditCard className="h-4 w-4 text-indigo-700" />
-                      Simulated Test Gateway
-                    </p>
-                    <p className="text-[11px] leading-relaxed">
-                      Instant simulated payment confirmation without deducting real money. Recommended for demonstrations, evaluations, and grading.
-                    </p>
                   </div>
                 )}
               </div>
@@ -437,11 +445,11 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                 {isProcessing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : paymentMethod === "UPI" ? (
-                  `✓ Confirm UPI Payment · Place Order (${formatCurrency(grandTotal)})`
-                ) : paymentMethod === "COD" ? (
-                  `Place Cash on Delivery Order (${formatCurrency(grandTotal)})`
+                  customUtr.trim()
+                    ? `✓ Confirm UPI Payment & Place Order (${formatCurrency(grandTotal)})`
+                    : `Enter UPI Ref No to Place Order (${formatCurrency(grandTotal)})`
                 ) : (
-                  `Authorize Test Payment (${formatCurrency(grandTotal)})`
+                  `Place Cash on Delivery Order (${formatCurrency(grandTotal)})`
                 )}
               </button>
             </form>
@@ -475,8 +483,11 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <p><span className="font-semibold text-stone-900">Payment:</span> {receipt.payment_method || `UPI (${STORE_UPI_ID})`}</p>
-                  <p><span className="font-semibold text-stone-900">Payment ID:</span> <span className="font-mono text-emerald-800 font-bold">{receipt.payment_id}</span></p>
+                  <p><span className="font-semibold text-stone-900">System Payment ID:</span> <span className="font-mono text-emerald-800 font-bold">{receipt.payment_id}</span></p>
                 </div>
+                {receipt.upi_ref_id && receipt.upi_ref_id !== "N/A" && (
+                  <p><span className="font-semibold text-stone-900">UPI Ref / UTR No:</span> <span className="font-mono text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-200">{receipt.upi_ref_id}</span></p>
+                )}
                 <p><span className="font-semibold text-stone-900">Date:</span> {new Date().toLocaleString('en-IN')}</p>
                 <p><span className="font-semibold text-stone-900">Recipient:</span> {receipt.customer.name} ({receipt.customer.phone})</p>
                 {receipt.customer.address && <p><span className="font-semibold text-stone-900">Delivery Address:</span> {receipt.customer.address}</p>}
@@ -519,14 +530,21 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
               </div>
 
               {/* Payment Receipt Banner */}
-              <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-xs text-stone-700 flex items-center justify-between">
+              <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-xs text-stone-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <span className="block text-[10px] font-bold uppercase text-emerald-800">Payment Verified</span>
                   <span className="font-semibold text-stone-800">{receipt.payment_method}</span>
                 </div>
-                <span className="font-mono text-xs font-bold text-emerald-800 bg-white px-2.5 py-1 rounded-lg border border-emerald-200">
-                  {receipt.payment_id}
-                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-xs font-bold text-emerald-800 bg-white px-2.5 py-1 rounded-lg border border-emerald-200" title="System Generated Payment ID">
+                    Sys: {receipt.payment_id}
+                  </span>
+                  {receipt.upi_ref_id && receipt.upi_ref_id !== "N/A" && (
+                    <span className="font-mono text-xs font-bold text-purple-800 bg-purple-100 px-2.5 py-1 rounded-lg border border-purple-300" title="Customer Entered UPI Reference / UTR">
+                      UTR: {receipt.upi_ref_id}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* 7-Day Return Policy Notice */}

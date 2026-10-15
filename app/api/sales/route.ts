@@ -11,7 +11,7 @@ export async function GET(req: Request) {
 
     let query = `
       SELECT 
-        s.id, s.total_amount, s.customer_name, s.customer_phone, s.customer_email, s.delivery_address, s.status, s.payment_method, s.payment_id, s.created_at,
+        s.id, s.total_amount, s.customer_name, s.customer_phone, s.customer_email, s.delivery_address, s.status, s.payment_method, s.payment_id, s.upi_ref_id, s.created_at,
         rr.status as return_status, rr.reason as return_reason, rr.reviewed_at as return_reviewed_at
       FROM Sales s
       LEFT JOIN ReturnRequests rr ON rr.sale_id = s.id

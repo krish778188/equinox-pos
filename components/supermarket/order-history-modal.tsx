@@ -143,7 +143,8 @@ export function OrderHistoryModal({
               Invoice No: <strong>${order.billNo}</strong><br/>
               Status: <strong>${order.status || 'Order Placed'}</strong><br/>
               Payment Method: <strong>${order.payment_method || 'UPI (krishraj453@okicici)'}</strong><br/>
-              Payment ID: <strong>${order.payment_id || 'N/A'}</strong><br/>
+              System Payment ID: <strong>${order.payment_id || 'N/A'}</strong><br/>
+              ${order.upi_ref_id && order.upi_ref_id !== 'N/A' ? `UPI Ref / UTR No: <strong>${order.upi_ref_id}</strong><br/>` : ''}
               Date: ${new Date(order.created_at).toLocaleString('en-IN')}<br/>
               Customer: ${order.customer_name || user?.name || "Shopper"}<br/>
               Delivery Address: ${order.delivery_address || "Home Delivery"}
@@ -484,9 +485,17 @@ export function OrderHistoryModal({
                 </div>
                 {selectedOrder.payment_id && (
                   <div className="flex justify-between py-1 text-stone-500">
-                    <span>Payment / UTR Ref ID</span>
+                    <span>System Payment ID</span>
                     <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                       {selectedOrder.payment_id}
+                    </span>
+                  </div>
+                )}
+                {selectedOrder.upi_ref_id && selectedOrder.upi_ref_id !== "N/A" && (
+                  <div className="flex justify-between py-1 text-stone-500">
+                    <span>UPI Reference / UTR No</span>
+                    <span className="font-mono font-bold text-purple-800 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                      {selectedOrder.upi_ref_id}
                     </span>
                   </div>
                 )}
@@ -569,8 +578,13 @@ export function OrderHistoryModal({
                         <p className="text-[11px] text-stone-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
                           <span>{new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {order.items?.length || 1} items</span>
                           {order.payment_id && (
-                            <span className="font-mono text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/80">
-                              Ref: {order.payment_id}
+                            <span className="font-mono text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/80" title="System Payment ID">
+                              Sys: {order.payment_id}
+                            </span>
+                          )}
+                          {order.upi_ref_id && order.upi_ref_id !== "N/A" && (
+                            <span className="font-mono text-[10px] text-purple-800 bg-purple-50 px-1.5 py-0.2 rounded border border-purple-200/80" title="Customer UPI Reference / UTR">
+                              UTR: {order.upi_ref_id}
                             </span>
                           )}
                         </p>

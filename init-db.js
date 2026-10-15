@@ -31,6 +31,7 @@ async function initDb(customDbPath = null) {
   // Safe schema migrations for existing SQLite databases
   await runAsync("ALTER TABLE Sales ADD COLUMN payment_method VARCHAR(100) DEFAULT 'UPI (krishraj453@okicici)'").catch(() => {});
   await runAsync("ALTER TABLE Sales ADD COLUMN payment_id VARCHAR(100)").catch(() => {});
+  await runAsync("ALTER TABLE Sales ADD COLUMN upi_ref_id VARCHAR(100)").catch(() => {});
 
   // Ensure default demo user exists
   await runAsync(`

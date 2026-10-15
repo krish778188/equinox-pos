@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS Sales (
     delivery_address TEXT,
     payment_method VARCHAR(100) DEFAULT 'UPI (krishraj453@okicici)',
     payment_id VARCHAR(100),
+    upi_ref_id VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

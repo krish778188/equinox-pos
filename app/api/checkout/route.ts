@@ -9,18 +9,27 @@ const execAsync = promisify(exec)
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { items, customer, bags, discountCode, deliveryAddress, paymentMethod, paymentId } = body
+    const { items, customer, bags, discountCode, deliveryAddress, paymentMethod, paymentId, upiRefId } = body
 
     const db = getDb()
 
-    // Ensure payment method & ID
-    const chosenMethod = paymentMethod || 'UPI (krishraj453@okicici)'
+    // Ensure payment method
+    const chosenMethod = paymentMethod === 'Cash on Delivery' ? 'Cash on Delivery' : 'UPI (krishraj453@okicici)'
+    const isUpi = chosenMethod.startsWith('UPI')
+
+    // Compulsory UPI Reference ID validation
+    if (isUpi && (!upiRefId || !upiRefId.trim())) {
+      db.close()
+      return NextResponse.json({ 
+        error: "UPI Reference / UTR Number is compulsory for UPI payments. Please complete the payment in your UPI app and enter the reference number." 
+      }, { status: 400 })
+    }
+
+    const cleanUpiRefId = isUpi ? upiRefId.trim() : "N/A"
     const chosenId = paymentId || (
-      chosenMethod.startsWith('UPI') 
-        ? `UPI-TXN-${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`
-        : chosenMethod === 'Cash on Delivery'
-          ? `COD-PAY-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
-          : `CARD-TXN-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
+      isUpi 
+        ? `EQX-UPI-${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`
+        : `EQX-COD-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
     )
 
     // Fetch active discount
@@ -98,8 +107,8 @@ export async function POST(req: Request) {
 
       const saleId = await new Promise<number>((resolve, reject) => {
         db.run(
-          `INSERT INTO Sales (total_amount, customer_name, customer_phone, customer_email, delivery_address, status, payment_method, payment_id)
-           VALUES (?, ?, ?, ?, ?, 'Order Placed', ?, ?)`,
+          `INSERT INTO Sales (total_amount, customer_name, customer_phone, customer_email, delivery_address, status, payment_method, payment_id, upi_ref_id)
+           VALUES (?, ?, ?, ?, ?, 'Order Placed', ?, ?, ?)`,
           [
             grandTotal,
             customer?.name || "Shopper",
@@ -107,7 +116,8 @@ export async function POST(req: Request) {
             customer?.email || "",
             deliveryAddress || customer?.address || "Express Home Delivery",
             chosenMethod,
-            chosenId
+            chosenId,
+            cleanUpiRefId
           ],
           function (err) {
             if (err) return reject(err)
@@ -138,6 +148,7 @@ export async function POST(req: Request) {
       result.receipt.status = 'Order Placed'
       result.receipt.payment_method = chosenMethod
       result.receipt.payment_id = chosenId
+      result.receipt.upi_ref_id = cleanUpiRefId
       if (customer) result.receipt.customer = customer
       if (bags) result.receipt.bags = bags
 
@@ -148,7 +159,8 @@ export async function POST(req: Request) {
         saleId,
         status: 'Order Placed',
         paymentMethod: chosenMethod,
-        paymentId: chosenId
+        paymentId: chosenId,
+        upiRefId: cleanUpiRefId
       })
     } else {
       return NextResponse.json({ error: "Checkout calculation failed" }, { status: 500 })
