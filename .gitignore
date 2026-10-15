@@ -16,6 +16,9 @@ build/
 # misc
 .DS_Store
 *.pem
+*.tsbuildinfo
+.agents/
+skills-lock.json
 
 # debug
 npm-debug.log*
