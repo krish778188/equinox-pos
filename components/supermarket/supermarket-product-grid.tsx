@@ -28,7 +28,8 @@ export function SupermarketProductGrid({
   cart,
   onAddToCart,
   onIncrement,
-  onDecrement
+  onDecrement,
+  onSetQuantity
 }: {
   products: Product[]
   query: string
@@ -39,6 +40,7 @@ export function SupermarketProductGrid({
   onAddToCart: (p: Product, qty: number) => void
   onIncrement: (id: string) => void
   onDecrement: (id: string) => void
+  onSetQuantity?: (p: Product, qty: number) => void
 }) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -226,12 +228,23 @@ export function SupermarketProductGrid({
       </div>
 
       {/* Product Detail Modal */}
-      <ProductDetailModal
-        product={selectedProduct}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAddToCart={onAddToCart}
-      />
+      {(() => {
+        const selectedCartItem = selectedProduct ? cart.find((c) => c.id === selectedProduct.id) : null
+        const selectedQtyInCart = selectedCartItem?.quantity || 0
+
+        return (
+          <ProductDetailModal
+            product={selectedProduct}
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            quantityInCart={selectedQtyInCart}
+            onAddToCart={onAddToCart}
+            onIncrement={onIncrement}
+            onDecrement={onDecrement}
+            onSetQuantity={onSetQuantity}
+          />
+        )
+      })()}
     </div>
   )
 }

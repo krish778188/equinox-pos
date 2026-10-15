@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getDb, getDbPath } from "@/lib/db"
+import { getDynamicExpiryDate } from "@/lib/date-utils"
 
 export async function GET() {
   try {
@@ -80,7 +81,11 @@ export async function GET() {
     })
     
     db.close()
-    return NextResponse.json({ stock, demand })
+    const dynamicStock = (stock || []).map((p: any) => ({
+      ...p,
+      expiry_date: getDynamicExpiryDate(p.expiry_date)
+    }))
+    return NextResponse.json({ stock: dynamicStock, demand })
   } catch (error) {
     console.error(error)
     return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 })

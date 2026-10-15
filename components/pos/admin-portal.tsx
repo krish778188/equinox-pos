@@ -899,7 +899,7 @@ export function AdminPortal({
                         <input
                           type="text"
                           className={inputClass}
-                          placeholder="B-2026-X"
+                          placeholder={`B-${new Date().getFullYear()}-X`}
                           value={newProduct.batch_no}
                           onChange={e => setNewProduct({...newProduct, batch_no: e.target.value})}
                         />
@@ -908,7 +908,7 @@ export function AdminPortal({
                         <input
                           type="text"
                           className={inputClass}
-                          placeholder="e.g. 25 Dec 2027"
+                          placeholder={`e.g. 25 Dec ${new Date().getFullYear() + 1}`}
                           value={newProduct.expiry_date}
                           onChange={e => setNewProduct({...newProduct, expiry_date: e.target.value})}
                         />

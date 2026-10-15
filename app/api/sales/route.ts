@@ -84,7 +84,7 @@ export async function GET(req: Request) {
                 resolve({
                   ...sale,
                   billNo: `INV-${sale.id.toString().padStart(5, '0')}`,
-                  orderId: `ORD-2026-${sale.id.toString().padStart(4, '0')}`,
+                  orderId: `ORD-${new Date().getFullYear()}-${sale.id.toString().padStart(4, '0')}`,
                   lastReturnDate: returnDeadline.toLocaleDateString('en-IN', {
                     day: 'numeric',
                     month: 'short',

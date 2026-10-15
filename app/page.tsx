@@ -140,6 +140,22 @@ export default function Page() {
     )
   }
 
+  function setQuantity(product: Product, quantity: number) {
+    setCart((prev) => {
+      if (quantity <= 0) {
+        return prev.filter((item) => item.id !== product.id)
+      }
+      const clamped = Math.min(quantity, product.stock)
+      const existing = prev.find((item) => item.id === product.id)
+      if (existing) {
+        return prev.map((item) =>
+          item.id === product.id ? { ...item, quantity: clamped } : item
+        )
+      }
+      return [...prev, { ...product, quantity: clamped }]
+    })
+  }
+
   function remove(id: string) {
     setCart((prev) => prev.filter((item) => item.id !== id))
   }
@@ -274,6 +290,7 @@ export default function Page() {
                 onAddToCart={addToCart}
                 onIncrement={increment}
                 onDecrement={decrement}
+                onSetQuantity={setQuantity}
               />
             </section>
 

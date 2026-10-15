@@ -2,6 +2,8 @@ import sqlite3 from "sqlite3"
 import path from "path"
 import fs from "fs"
 
+import { syncSampleDatesInDb } from "./date-utils"
+
 let isInitialized = false
 
 export function getDbPath(): string {
@@ -31,6 +33,8 @@ export function getDb(): sqlite3.Database {
         } catch (e) {
           console.error("Auto-init require error:", e)
         }
+      } else {
+        syncSampleDatesInDb(db).catch(() => {})
       }
     })
   }

@@ -15,11 +15,41 @@ async function run(existingDb = null) {
     });
   });
 
+  const BASELINE_DATE = new Date("2026-10-15T00:00:00.000Z");
+  const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  function getDynamicExpiryDate(originalStr, currentDate = new Date()) {
+    if (!originalStr || originalStr === "N/A" || originalStr.trim() === "") return "N/A";
+    const parts = originalStr.trim().split(/\s+/);
+    let origDate = null;
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = MONTH_NAMES.indexOf(parts[1]);
+      const year = parseInt(parts[2], 10);
+      if (!isNaN(day) && month !== -1 && !isNaN(year)) {
+        origDate = new Date(Date.UTC(year, month, day));
+      }
+    }
+    if (!origDate) {
+      origDate = new Date(originalStr);
+    }
+    if (isNaN(origDate.getTime())) return originalStr;
+
+    const diffMs = origDate.getTime() - BASELINE_DATE.getTime();
+    const targetDate = new Date(currentDate.getTime() + diffMs);
+    const d = targetDate.getUTCDate().toString().padStart(2, "0");
+    const m = MONTH_NAMES[targetDate.getUTCMonth()];
+    const y = targetDate.getUTCFullYear();
+    return `${d} ${m} ${y}`;
+  }
+
   // 1. Seed all 41 verified products from products-data.json
   const productsFilePath = path.join(__dirname, 'products-data.json');
   if (fs.existsSync(productsFilePath)) {
     const products = JSON.parse(fs.readFileSync(productsFilePath, 'utf8'));
+    const now = new Date();
     for (const p of products) {
+      const dynamicExpiry = getDynamicExpiryDate(p.expiry_date, now);
       await runAsync(`
         INSERT INTO Products (id, name, category, price, stock, brand, batch_no, expiry_date, description, image_url, unit, mrp)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -28,9 +58,9 @@ async function run(existingDb = null) {
           stock=excluded.stock, brand=excluded.brand, batch_no=excluded.batch_no,
           expiry_date=excluded.expiry_date, description=excluded.description,
           image_url=excluded.image_url, unit=excluded.unit, mrp=excluded.mrp
-      `, [p.id, p.name, p.category, p.price, p.stock, p.brand, p.batch_no, p.expiry_date, p.description, p.image_url, p.unit, p.mrp]);
+      `, [p.id, p.name, p.category, p.price, p.stock, p.brand, p.batch_no, dynamicExpiry, p.description, p.image_url, p.unit, p.mrp]);
     }
-    console.log(`Loaded ${products.length} catalog products successfully.`);
+    console.log(`Loaded ${products.length} catalog products with dynamic expiry dates.`);
   }
 
   // 2. Seed default order history for Demo Shopper (user@equinox.com)
