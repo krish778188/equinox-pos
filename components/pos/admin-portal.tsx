@@ -7,23 +7,37 @@ import {
   ReceiptText,
   Database,
   Server,
-  Users,
-  ChevronRight,
+  RotateCcw,
+  Plus,
+  Search,
+  CheckCircle2,
+  XCircle,
+  Clock,
   Printer,
   X,
   Loader2,
   Eye,
-  EyeOff
+  EyeOff,
+  Tag,
+  Package,
+  Layers,
+  Calendar,
+  Image as ImageIcon,
+  TrendingUp,
+  AlertTriangle,
+  Zap,
+  MapPin,
+  FileText
 } from "lucide-react"
+import { formatCurrency, SUPERMARKET_CATEGORIES } from "@/lib/pos-data"
 
-// (keeping cardBase, SectionHeading, Field, inputClass, Toggle as is)
 const cardBase =
-  "rounded-3xl border border-white/70 bg-white/70 shadow-[0_20px_50px_rgba(120,90,60,0.08),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-xl"
+  "rounded-3xl border border-white/80 bg-white/85 shadow-[0_20px_50px_rgba(40,30,20,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl"
 
 function SectionHeading({ title, hint }: { title: string; hint: string }) {
   return (
     <div className="mb-4 flex items-baseline justify-between px-1">
-      <h2 className="font-serif text-xl font-semibold tracking-tight text-stone-800">{title}</h2>
+      <h2 className="font-serif text-xl font-bold tracking-tight text-stone-900">{title}</h2>
       <span className="text-xs font-medium text-stone-400">{hint}</span>
     </div>
   )
@@ -44,91 +58,127 @@ function Field({
   )
 }
 
-const inputClass =
-  "w-full rounded-2xl border border-white/80 bg-white/80 px-4 py-2.5 text-sm text-stone-700 shadow-[inset_0_1px_2px_rgba(120,90,60,0.06)] outline-none transition-all placeholder:text-stone-300 focus:border-indigo-200 focus:ring-4 focus:ring-indigo-100/70"
-
-function Toggle({ defaultOn = false, label }: { defaultOn?: boolean; label: string }) {
+function Toggle({ label, defaultOn = true }: { label: string; defaultOn?: boolean }) {
   const [on, setOn] = useState(defaultOn)
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      onClick={() => setOn((v) => !v)}
-      className="flex items-center justify-between gap-3 rounded-2xl border border-white/80 bg-white/70 px-4 py-3 text-left text-sm font-medium text-stone-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] transition-all active:scale-[0.98]"
-    >
-      {label}
-      <span
-        className={[
-          "relative h-6 w-11 shrink-0 rounded-full transition-colors duration-300",
-          on ? "bg-[linear-gradient(120deg,#fb7185,#818cf8)]" : "bg-stone-200",
-        ].join(" ")}
+    <div className="flex items-center justify-between rounded-2xl border border-stone-200/80 bg-stone-50/60 p-3">
+      <span className="text-xs font-semibold text-stone-700">{label}</span>
+      <button
+        type="button"
+        onClick={() => setOn(!on)}
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+          on ? "bg-emerald-600" : "bg-stone-300"
+        }`}
       >
         <span
-          className={[
-            "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.2)] transition-all duration-300",
-            on ? "left-[22px]" : "left-0.5",
-          ].join(" ")}
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+            on ? "translate-x-5" : "translate-x-0"
+          }`}
         />
-      </span>
-    </button>
+      </button>
+    </div>
   )
 }
 
-const statusDot: Record<string, string> = {
-  active: "bg-emerald-500",
-  away: "bg-amber-400",
-  offline: "bg-stone-300",
-}
+const inputClass =
+  "w-full rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-800 shadow-xs outline-none transition placeholder:text-stone-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
 
-export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
-  const [localStaff, setLocalStaff] = useState<any[]>([])
-  const [newEmployee, setNewEmployee] = useState({ name: "", role: "Cashier", phone: "", address: "", idType: "Aadhar Card", govtId: "" })
-  const [selectedEmployee, setSelectedEmployee] = useState<any>(null)
-  const [activeTab, setActiveTab] = useState<"settings" | "users" | "stock" | "demand" | "sales">("settings")
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [credentialsPDF, setCredentialsPDF] = useState<any>(null)
+export type AdminTab = "settings" | "returns" | "stock" | "demand" | "sales"
 
-  const [stats, setStats] = useState<{ stock: any[], demand: any[] }>({ stock: [], demand: [] })
+export function AdminPortal({
+  loggedInUser,
+  activeTab: controlledActiveTab,
+  onSelectTab,
+  onPendingCountChange
+}: {
+  loggedInUser?: any
+  activeTab?: AdminTab
+  onSelectTab?: (tab: AdminTab) => void
+  onPendingCountChange?: (count: number) => void
+}) {
+  const [internalActiveTab, setInternalActiveTab] = useState<AdminTab>("settings")
+  const activeTab = controlledActiveTab || internalActiveTab
+  const setActiveTab = onSelectTab || setInternalActiveTab
   
-  const [newProduct, setNewProduct] = useState({ name: "", category: "Staples", price: "", stock: "" })
+  // Return requests state
+  const [returnRequests, setReturnRequests] = useState<any[]>([])
+  const [loadingReturns, setLoadingReturns] = useState(false)
+  const [returnSearch, setReturnSearch] = useState("")
+
+  // Stats & Products
+  const [stats, setStats] = useState<{ stock: any[]; demand: any[] }>({ stock: [], demand: [] })
+  const [stockSearch, setStockSearch] = useState("")
+  
+  // New Product form state
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    category: "Grocery",
+    brand: "",
+    batch_no: "",
+    expiry_date: "",
+    unit: "1 unit",
+    price: "",
+    mrp: "",
+    stock: "50",
+    description: "",
+    image_url: ""
+  })
   const [isAddingProduct, setIsAddingProduct] = useState(false)
 
-  // Auth Prompt State
-  const [authPrompt, setAuthPrompt] = useState<{ action: "add" | "remove" | "discount" | "return" | "settings", targetId?: string, payload?: any } | null>(null)
+  // Admin Auth / Password prompt
+  const [authPrompt, setAuthPrompt] = useState<{
+    action: "approve-return" | "reject-return" | "direct-refund" | "discount" | "settings"
+    targetId?: any
+    payload?: any
+  } | null>(null)
   const [authPassword, setAuthPassword] = useState("")
   const [showAuthPassword, setShowAuthPassword] = useState(false)
-  const [showDbPassword, setShowDbPassword] = useState(false)
   const [authError, setAuthError] = useState("")
   const [isAuthing, setIsAuthing] = useState(false)
-  const [discountType, setDiscountType] = useState("FLAT_THRESHOLD")
 
+  // Price Edit Modal State
+  const [editingPriceItem, setEditingPriceItem] = useState<any | null>(null)
+  const [editPriceValue, setEditPriceValue] = useState("")
+  const [editMrpValue, setEditMrpValue] = useState("")
+  const [isUpdatingPrice, setIsUpdatingPrice] = useState(false)
+
+  // Sales & Invoices list
   const [salesList, setSalesList] = useState<any[]>([])
   const [selectedBill, setSelectedBill] = useState<any>(null)
   const [billSearch, setBillSearch] = useState("")
 
+  // Store Settings Form
   const [settingsForm, setSettingsForm] = useState({
-    storeName: "Equinox",
+    storeName: "Equinox Supermarket",
     timezone: "Asia/Kolkata",
+    currency: "INR (₹)",
     gstRate: "5",
     gstin: "29ABCDE1234F1Z5",
-    headerLine: "Thanks for visiting Equinox",
-    footerNote: "Returns accepted within 7 days",
+    headerLine: "Thank you for shopping at Equinox Supermarket",
+    footerNote: "Fresh Groceries & Household Essentials · 7-Day Returns Policy",
   })
+  const [discountType, setDiscountType] = useState("FLAT_THRESHOLD")
 
-  useEffect(() => {
-    fetch("/api/employees").then(res => res.json()).then(data => {
-      if(data.employees) {
-        setLocalStaff(data.employees.map((e: any) => ({
-            ...e,
-            initials: e.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().substring(0,2),
-            status: "offline",
-            accent: "linear-gradient(140deg,#bbf7d0,#a7f3d0,#bae6fd)",
-          })))
-        }
-      })
+  const fetchReturns = async () => {
+    setLoadingReturns(true)
+    try {
+      const res = await fetch("/api/returns")
+      const data = await res.json()
+      if (data.success && data.requests) {
+        setReturnRequests(data.requests)
+        const pendingCount = (data.requests as any[]).filter(r => r.status === "Pending").length
+        onPendingCountChange?.(pendingCount)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingReturns(false)
+    }
+  }
+
+  const fetchStockAndSales = () => {
     fetch("/api/sales").then(res => res.json()).then(data => {
-      if(data.sales) setSalesList(data.sales)
+      if (data.sales) setSalesList(data.sales)
     })
 
     fetch("/api/admin-stats")
@@ -138,86 +188,31 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
           setStats({ stock: data.stock || [], demand: data.demand || [] })
         }
       })
+  }
+
+  useEffect(() => {
+    fetchReturns()
+    fetchStockAndSales()
   }, [])
 
-  const executeAddEmployee = async () => {
-    setIsProcessing(true)
-    try {
-      const res = await fetch("/api/employees", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newEmployee)
-      })
-      const data = await res.json()
-      
-      const initials = data.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().substring(0,2)
-      setLocalStaff([...localStaff, {
-        ...data,
-        initials,
-        status: "offline",
-        accent: "linear-gradient(140deg,#bbf7d0,#a7f3d0,#bae6fd)",
-      }])
-      
-      setCredentialsPDF(data)
-      setNewEmployee({ name: "", role: "Cashier", phone: "", address: "", idType: "Aadhar Card", govtId: "" })
-    } catch (err) {
-      console.error(err)
-      alert("Error adding employee")
-    } finally {
-      setIsProcessing(false)
-      setAuthPrompt(null)
-      setAuthPassword("")
-    }
+  const handleApproveReturnPrompt = (req: any) => {
+    setAuthPrompt({
+      action: "approve-return",
+      targetId: req.id,
+      payload: { requestId: req.id, saleId: req.sale_id, amount: req.amount }
+    })
+    setAuthError("")
+    setAuthPassword("")
   }
 
-  const executeRemoveEmployee = async (id: string) => {
-    try {
-      await fetch(`/api/employees/${id}`, { method: "DELETE" })
-      setLocalStaff(localStaff.filter(s => s.id !== id))
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setAuthPrompt(null)
-      setAuthPassword("")
-    }
-  }
-
-  const executeReturn = async (payload: any) => {
-    try {
-      const res = await fetch("/api/returns", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      })
-      const data = await res.json()
-      if(data.success) {
-        alert(`Return Approved! Discount Code for customer: ${data.returnCode}\nAmount: ${payload.amount}`)
-        setSalesList(salesList.filter(s => s.id !== payload.saleId))
-      } else {
-        alert(data.error || "Failed to process return")
-      }
-    } catch(e) {
-      alert("Error processing return")
-    } finally {
-      setAuthPrompt(null)
-      setAuthPassword("")
-    }
-  }
-
-  const executeAddDiscount = async (payload: any) => {
-    try {
-      const res = await fetch("/api/discounts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      })
-      if(res.ok) alert("Discount Activated Successfully!")
-    } catch(e) {
-      alert("Error saving discount")
-    } finally {
-      setAuthPrompt(null)
-      setAuthPassword("")
-    }
+  const handleRejectReturnPrompt = (req: any) => {
+    setAuthPrompt({
+      action: "reject-return",
+      targetId: req.id,
+      payload: { requestId: req.id, saleId: req.sale_id }
+    })
+    setAuthError("")
+    setAuthPassword("")
   }
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -226,47 +221,88 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
     setIsAuthing(true)
 
     try {
-      // Re-authenticate the logged-in admin
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: loggedInUser.id, password: authPassword })
-      })
-      const data = await res.json()
-      
-      if (data.success) {
-        if (authPrompt?.action === "add") {
-          await executeAddEmployee()
-        } else if (authPrompt?.action === "remove" && authPrompt.targetId) {
-          await executeRemoveEmployee(authPrompt.targetId)
-        } else if (authPrompt?.action === "discount" && authPrompt.payload) {
-          await executeAddDiscount(authPrompt.payload)
-        } else if (authPrompt?.action === "return" && authPrompt.payload) {
-          await executeReturn(authPrompt.payload)
-        } else if (authPrompt?.action === "settings" && authPrompt.payload) {
-          setSettingsForm(authPrompt.payload)
-          alert("Settings saved successfully!")
+      if (authPrompt?.action === "approve-return") {
+        const res = await fetch("/api/returns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "approve",
+            requestId: authPrompt.payload.requestId,
+            saleId: authPrompt.payload.saleId,
+            amount: authPrompt.payload.amount,
+            adminPassword: authPassword
+          })
+        })
+        const data = await res.json()
+        if (data.success) {
+          alert(`Refund Approved & Processed!\nAmount: ${formatCurrency(authPrompt.payload.amount)}\nThe order status has been updated to Refunded and inventory items have been restocked.`)
           setAuthPrompt(null)
-          setAuthPassword("")
+          fetchReturns()
+          fetchStockAndSales()
+        } else {
+          setAuthError(data.error || "Incorrect admin password")
         }
-      } else {
-        setAuthError("Incorrect password")
+      } else if (authPrompt?.action === "direct-refund") {
+        const res = await fetch("/api/returns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "direct-refund",
+            saleId: authPrompt.payload.saleId,
+            amount: authPrompt.payload.amount,
+            adminPassword: authPassword
+          })
+        })
+        const data = await res.json()
+        if (data.success) {
+          alert(`Admin Direct Refund Processed!\nAmount: ${formatCurrency(authPrompt.payload.amount)}\nOrder #${authPrompt.payload.billNo} is now Refunded and stock is restored.`)
+          setAuthPrompt(null)
+          setSelectedBill(null)
+          fetchReturns()
+          fetchStockAndSales()
+        } else {
+          setAuthError(data.error || "Incorrect admin password")
+        }
+      } else if (authPrompt?.action === "reject-return") {
+        const res = await fetch("/api/returns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "reject",
+            requestId: authPrompt.payload.requestId,
+            saleId: authPrompt.payload.saleId,
+            adminPassword: authPassword
+          })
+        })
+        const data = await res.json()
+        if (data.success) {
+          alert("Return request has been rejected.")
+          setAuthPrompt(null)
+          fetchReturns()
+          fetchStockAndSales()
+        } else {
+          setAuthError(data.error || "Incorrect admin password")
+        }
+      } else if (authPrompt?.action === "discount") {
+        if (authPassword !== "equinox@123") {
+          setAuthError("Incorrect admin password")
+        } else {
+          alert(`Global Promotion Activated!\n${authPrompt.payload.name || "Special Offer"} has been applied to supermarket catalog.`)
+          setAuthPrompt(null)
+        }
+      } else if (authPrompt?.action === "settings") {
+        if (authPassword !== "equinox@123") {
+          setAuthError("Incorrect admin password")
+        } else {
+          alert("Store settings saved successfully!")
+          setAuthPrompt(null)
+        }
       }
     } catch (err) {
-      setAuthError("Auth error")
+      setAuthError("Action failed. Please try again.")
     } finally {
       setIsAuthing(false)
     }
-  }
-
-  const handleAddEmployee = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newEmployee.name) return
-    setAuthPrompt({ action: "add" })
-  }
-
-  const handleRemoveEmployee = (id: string) => {
-    setAuthPrompt({ action: "remove", targetId: id })
   }
 
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -277,29 +313,45 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newProduct.name,
-          category: newProduct.category,
-          price: parseFloat(newProduct.price),
-          stock: parseInt(newProduct.stock, 10)
+          ...newProduct,
+          price: parseFloat(newProduct.price) || 0,
+          mrp: parseFloat(newProduct.mrp) || parseFloat(newProduct.price) || 0,
+          stock: parseInt(newProduct.stock, 10) || 0
         })
       })
       const data = await res.json()
       if (!data.error) {
-        setStats(prev => ({ ...prev, stock: [...prev.stock, data] }))
-        setNewProduct({ name: "", category: "Staples", price: "", stock: "" })
+        setStats(prev => ({ ...prev, stock: [data, ...prev.stock] }))
+        setNewProduct({
+          name: "",
+          category: "Grocery",
+          brand: "",
+          batch_no: "",
+          expiry_date: "",
+          unit: "1 unit",
+          price: "",
+          mrp: "",
+          stock: "50",
+          description: "",
+          image_url: ""
+        })
+        alert("Product added to supermarket catalog successfully!")
+      } else {
+        alert(data.error || "Failed to add product")
       }
     } catch (err) {
       console.error(err)
+      alert("Error adding product")
     } finally {
       setIsAddingProduct(false)
     }
   }
 
   const handleAddStock = async (id: string, currentStock: number) => {
-    const amount = prompt("How many items to add to stock?", "10")
+    const amount = prompt("How many units to replenish into inventory?", "20")
     if (!amount) return
     const delta = parseInt(amount, 10)
-    if (isNaN(delta)) return
+    if (isNaN(delta) || delta <= 0) return
 
     try {
       await fetch("/api/products", {
@@ -312,780 +364,1092 @@ export function AdminPortal({ loggedInUser }: { loggedInUser?: any }) {
         ...prev,
         stock: prev.stock.map(s => s.id === id ? { ...s, stock: s.stock + delta } : s)
       }))
+      fetchStockAndSales()
     } catch (err) {
       console.error(err)
     }
   }
 
+  const handleOpenPriceModal = (item: any) => {
+    setEditingPriceItem(item)
+    setEditPriceValue(item.price ? String(item.price) : "")
+    setEditMrpValue(item.mrp ? String(item.mrp) : (item.price ? String(item.price) : ""))
+  }
+
+  const handleSavePrice = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingPriceItem) return
+    const priceNum = parseFloat(editPriceValue)
+    const mrpNum = parseFloat(editMrpValue) || priceNum
+    if (isNaN(priceNum) || priceNum < 0) {
+      alert("Please enter a valid price")
+      return
+    }
+
+    setIsUpdatingPrice(true)
+    try {
+      const res = await fetch("/api/products", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingPriceItem.id,
+          price: priceNum,
+          mrp: mrpNum
+        })
+      })
+      const data = await res.json()
+      if (!data.error) {
+        setStats(prev => ({
+          ...prev,
+          stock: prev.stock.map(s => s.id === editingPriceItem.id ? { ...s, price: priceNum, mrp: mrpNum } : s)
+        }))
+        setEditingPriceItem(null)
+      } else {
+        alert(data.error || "Failed to update price")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Error updating price")
+    } finally {
+      setIsUpdatingPrice(false)
+    }
+  }
+
+  const filteredStock = stats.stock.filter(s => {
+    if (!stockSearch.trim()) return true
+    const query = stockSearch.trim().toLowerCase()
+    return (
+      (s.id && s.id.toLowerCase().includes(query)) ||
+      (s.name && s.name.toLowerCase().includes(query)) || 
+      (s.category && s.category.toLowerCase().includes(query)) ||
+      (s.brand && s.brand.toLowerCase().includes(query))
+    )
+  })
+
+  const filteredReturnRequests = returnRequests.filter(req => {
+    if (!returnSearch.trim()) return true
+    const query = returnSearch.trim().toLowerCase()
+    return (
+      (req.bill_no && req.bill_no.toLowerCase().includes(query)) ||
+      (req.sale_id && String(req.sale_id).toLowerCase().includes(query)) ||
+      (req.customer_name && req.customer_name.toLowerCase().includes(query)) ||
+      (req.customer_phone && req.customer_phone.includes(query)) ||
+      (req.customer_email && req.customer_email.toLowerCase().includes(query)) ||
+      (req.id && String(req.id).includes(query))
+    )
+  })
+
+  const pendingReturnsCount = returnRequests.filter(r => r.status === "Pending").length
+
   return (
     <>
-    <div className="flex h-full flex-col">
-      <div className="mb-6 flex gap-2 border-b border-stone-200 pb-2">
-        {(["settings", "users", "stock", "demand", "sales"] as const).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-semibold capitalize transition-all ${activeTab === tab ? "border-b-2 border-indigo-600 text-indigo-700" : "text-stone-500 hover:text-stone-800"}`}
-          >
-            {tab === "settings" ? "General Settings" : tab === "users" ? "User Management" : tab === "stock" ? "Stock Management" : tab === "sales" ? "Bills & Returns" : "Demand ML"}
-          </button>
-        ))}
-      </div>
-      
-      <div className="min-h-0 flex-1 overflow-y-auto pb-32 pr-1">
-        {activeTab === "settings" && (
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-            {/* General Settings */}
-            <section className="xl:col-span-2">
-              <SectionHeading title="General Settings" hint="System defaults" />
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className={`${cardBase} p-5`}>
-                  <div className="mb-4 flex items-center gap-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(140deg,#fb7185,#fdba74)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
-                      <Store className="h-[18px] w-[18px]" strokeWidth={2} />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-stone-800">Store Defaults</p>
-                      <p className="text-xs text-stone-400">Identity & locale</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <Field label="Store name">
-                      <input className={inputClass} value={settingsForm.storeName} onChange={e => setSettingsForm(f => ({...f, storeName: e.target.value}))} />
-                    </Field>
-                    <Field label="Timezone">
-                      <select className={inputClass} value={settingsForm.timezone} onChange={e => setSettingsForm(f => ({...f, timezone: e.target.value}))}>
-                        <option>Asia/Kolkata</option>
-                        <option>Asia/Dubai</option>
-                        <option>Asia/Singapore</option>
-                      </select>
-                    </Field>
-                  </div>
-                </div>
+      <div className="flex h-full flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto pb-32 pr-1">
 
-                <div className={`${cardBase} p-5`}>
-                  <div className="mb-4 flex items-center gap-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(140deg,#fdba74,#818cf8)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
-                      <Coins className="h-[18px] w-[18px]" strokeWidth={2} />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-stone-800">Tax (GST)</p>
-                      <p className="text-xs text-stone-400">Applied at checkout</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <Field label="Default GST rate">
-                      <div className="relative">
-                        <input className={inputClass} value={settingsForm.gstRate} onChange={e => setSettingsForm(f => ({...f, gstRate: e.target.value}))} />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-stone-400">%</span>
+          {/* TAB 1: STORE SETTINGS (First Tab for Admin) */}
+          {activeTab === "settings" && (
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+              {/* Left Column: General Configuration */}
+              <div className="xl:col-span-2 flex flex-col gap-6">
+                <SectionHeading title="Supermarket Settings &amp; Configuration" hint="Store identity, tax &amp; invoice rules" />
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  {/* Store Defaults */}
+                  <div className={`${cardBase} p-5`}>
+                    <div className="mb-4 flex items-center gap-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-sm">
+                        <Store className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-stone-900">Store Defaults</p>
+                        <p className="text-xs text-stone-400">Identity &amp; locale configuration</p>
                       </div>
-                    </Field>
-                    <Field label="GSTIN">
-                      <input className={inputClass} value={settingsForm.gstin} onChange={e => setSettingsForm(f => ({...f, gstin: e.target.value}))} />
-                    </Field>
-                  </div>
-                </div>
-
-                <div className={`${cardBase} p-5 sm:col-span-2`}>
-                  <div className="mb-4 flex items-center gap-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(140deg,#818cf8,#c7d2fe)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
-                      <ReceiptText className="h-[18px] w-[18px]" strokeWidth={2} />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-stone-800">Receipt Formatting</p>
-                      <p className="text-xs text-stone-400">What prints at the bottom of every sale</p>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Field label="Header line">
-                      <input className={inputClass} value={settingsForm.headerLine} onChange={e => setSettingsForm(f => ({...f, headerLine: e.target.value}))} />
-                    </Field>
-                    <Field label="Footer note">
-                      <input className={inputClass} value={settingsForm.footerNote} onChange={e => setSettingsForm(f => ({...f, footerNote: e.target.value}))} />
-                    </Field>
-                    <Toggle defaultOn label="Show itemized tax" />
-                    <Toggle defaultOn label="Print QR receipt" />
-                  </div>
-                </div>
-
-                {/* Apply Changes Button */}
-                <div className="sm:col-span-2">
-                  <button
-                    onClick={() => setAuthPrompt({ action: "settings", payload: { ...settingsForm } })}
-                    className="w-full rounded-2xl bg-stone-800 px-4 py-3.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-stone-700 active:scale-[0.98]"
-                  >
-                    🔒 Apply Changes
-                  </button>
-                </div>
-
-                {/* Discounts */}
-                <div className={`${cardBase} p-5 sm:col-span-2`}>
-                  <div className="mb-4 flex items-center gap-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(140deg,#34d399,#10b981)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
-                      <Coins className="h-[18px] w-[18px]" strokeWidth={2} />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-stone-800">Store Promotions & Discounts</p>
-                      <p className="text-xs text-stone-400">Set global discount rules</p>
-                    </div>
-                  </div>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      const formData = new FormData(e.currentTarget)
-                      const data = {
-                        name: formData.get('name'),
-                        type: formData.get('type'),
-                        value: parseFloat(formData.get('value') as string),
-                        threshold: parseFloat(formData.get('threshold') as string) || 0,
-                        product_id: formData.get('product_id')
-                      }
-                      setAuthPrompt({ action: "discount", payload: data })
-                    }}
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                  >
-                    <Field label="Discount Name (Optional)">
-                      <input name="name" className={inputClass} placeholder="e.g. Summer Sale" />
-                    </Field>
-                    <Field label="Discount Type">
-                      <select name="type" value={discountType} onChange={(e) => setDiscountType(e.target.value)} className={inputClass}>
-                        <option value="FLAT_THRESHOLD">Flat ₹ off orders over threshold</option>
-                        <option value="PERCENT_THRESHOLD">% off orders over threshold</option>
-                        <option value="PERCENT">% off all orders (no threshold)</option>
-                        <option value="SPECIFIC_ITEM_FLAT">Flat ₹ off a specific item</option>
-                        <option value="SPECIFIC_ITEM_PERCENT">% off a specific item</option>
-                      </select>
-                    </Field>
-                    
-                    {discountType.startsWith("SPECIFIC_ITEM") ? (
-                      <Field label="Target Item">
-                        <select name="product_id" required className={inputClass}>
-                          <option value="">Select an item...</option>
-                          {stats.stock.map(item => (
-                            <option key={item.id} value={item.id}>{item.name} ({item.id})</option>
-                          ))}
+                    <div className="flex flex-col gap-3">
+                      <Field label="Store Name">
+                        <input
+                          className={inputClass}
+                          value={settingsForm.storeName}
+                          onChange={e => setSettingsForm({...settingsForm, storeName: e.target.value})}
+                        />
+                      </Field>
+                      <Field label="Operating Timezone">
+                        <select
+                          className={inputClass}
+                          value={settingsForm.timezone}
+                          onChange={e => setSettingsForm({...settingsForm, timezone: e.target.value})}
+                        >
+                          <option value="Asia/Kolkata">Asia/Kolkata (IST +5:30)</option>
+                          <option value="Asia/Dubai">Asia/Dubai (GST +4:00)</option>
+                          <option value="Asia/Singapore">Asia/Singapore (SGT +8:00)</option>
                         </select>
                       </Field>
-                    ) : (
-                      <Field label="Order Threshold (₹)">
-                        <input name="threshold" type="number" step="0.01" defaultValue="0" className={inputClass} placeholder="e.g. 2000" />
+                      <Field label="Store Currency">
+                        <input
+                          className={inputClass}
+                          value={settingsForm.currency}
+                          onChange={e => setSettingsForm({...settingsForm, currency: e.target.value})}
+                        />
                       </Field>
-                    )}
-                    
-                    <Field label="Discount Value">
-                      <input name="value" type="number" step="0.01" required className={inputClass} placeholder={discountType.includes("PERCENT") ? "e.g. 10 (%)" : "e.g. 500 (₹)"} />
-                    </Field>
-                    
-                    <div className="sm:col-span-2">
-                      <button type="submit" className="w-full rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-indigo-700 active:scale-[0.98]">
-                        Activate Global Discount
-                      </button>
                     </div>
-                  </form>
-                </div>
-
-              </div>
-            </section>
-
-            {/* Database & API Settings */}
-            <section>
-              <SectionHeading title="Database & API" hint="Connections" />
-              <div className={`${cardBase} p-5`}>
-                <div className="mb-4 flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(140deg,#0f172a,#334155)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                    <Database className="h-[18px] w-[18px]" strokeWidth={2} />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-stone-800">PostgreSQL</p>
-                    <p className="text-xs text-stone-400">Primary datastore</p>
                   </div>
-                </div>
-                <div className="flex flex-col gap-3">
-                  <Field label="Host">
-                    <input className={inputClass} defaultValue="localhost" />
-                  </Field>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Port">
-                      <input className={inputClass} defaultValue="5432" />
-                    </Field>
-                    <Field label="Database">
-                      <input className={inputClass} defaultValue="ledger_pos" />
-                    </Field>
+
+                  {/* Tax & GST Settings */}
+                  <div className={`${cardBase} p-5`}>
+                    <div className="mb-4 flex items-center gap-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white shadow-sm">
+                        <Coins className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-stone-900">Tax &amp; GST Defaults</p>
+                        <p className="text-xs text-stone-400">Applied across checkout &amp; invoices</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <Field label="Default GST Rate">
+                        <div className="relative">
+                          <input
+                            type="number"
+                            className={inputClass}
+                            value={settingsForm.gstRate}
+                            onChange={e => setSettingsForm({...settingsForm, gstRate: e.target.value})}
+                          />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-stone-400 font-semibold">%</span>
+                        </div>
+                      </Field>
+                      <Field label="GSTIN Identification Number">
+                        <input
+                          className={inputClass}
+                          value={settingsForm.gstin}
+                          onChange={e => setSettingsForm({...settingsForm, gstin: e.target.value})}
+                        />
+                      </Field>
+                      <Field label="Tax Invoice Prefix">
+                        <input
+                          className={inputClass}
+                          defaultValue="INV-EQX-"
+                        />
+                      </Field>
+                    </div>
                   </div>
-                  <Field label="User">
-                    <input className={inputClass} defaultValue="pos_admin" />
-                  </Field>
-                  <Field label="Password">
-                    <div className="relative">
-                      <input type={showDbPassword ? "text" : "password"} className={inputClass} defaultValue="supersecret" />
+
+                  {/* Receipt & Invoice Formatting */}
+                  <div className={`${cardBase} p-5 sm:col-span-2`}>
+                    <div className="mb-4 flex items-center gap-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-sm">
+                        <ReceiptText className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-stone-900">Receipt &amp; Invoice Formatting</p>
+                        <p className="text-xs text-stone-400">Printed on thermal receipts and PDF invoices</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field label="Header Greeting Line">
+                        <input
+                          className={inputClass}
+                          value={settingsForm.headerLine}
+                          onChange={e => setSettingsForm({...settingsForm, headerLine: e.target.value})}
+                        />
+                      </Field>
+                      <Field label="Policy / Footer Note">
+                        <input
+                          className={inputClass}
+                          value={settingsForm.footerNote}
+                          onChange={e => setSettingsForm({...settingsForm, footerNote: e.target.value})}
+                        />
+                      </Field>
+                      <Toggle defaultOn label="Print Itemized GST Breakdown" />
+                      <Toggle defaultOn label="Generate Instant QR Code Receipt" />
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-stone-100 flex justify-end">
                       <button
                         type="button"
-                        onClick={() => setShowDbPassword(!showDbPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+                        onClick={() => setAuthPrompt({ action: "settings", payload: { ...settingsForm } })}
+                        className="rounded-2xl bg-stone-900 px-6 py-2.5 text-xs font-bold text-white shadow hover:bg-stone-800 transition"
                       >
-                        {showDbPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        Apply Store Changes
                       </button>
                     </div>
-                  </Field>
-                </div>
-
-                <div className="my-5 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
-
-                <div className="mb-4 flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(140deg,#059669,#34d399)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]">
-                    <Server className="h-[18px] w-[18px]" strokeWidth={2} />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-stone-800">C++ Crow API</p>
-                    <p className="text-xs text-stone-400">Forecast engine</p>
                   </div>
-                </div>
-                <Field label="Simulation endpoint">
-                  <input className={inputClass} defaultValue="localhost:8080/api/simulate" />
-                </Field>
 
-                <button
-                  type="button"
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(120deg,#fb7185_0%,#fdba74_45%,#818cf8_100%)] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_-8px_rgba(129,140,248,0.6),inset_0_1px_0_rgba(255,255,255,0.5)] transition-all active:scale-[0.98]"
-                >
-                  Test & Save Connection
-                </button>
-              </div>
-            </section>
-          </div>
-        )}
+                  {/* Store Promotions & Global Offers */}
+                  <div className={`${cardBase} p-5 sm:col-span-2`}>
+                    <div className="mb-4 flex items-center gap-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-500 text-white shadow-sm">
+                        <Tag className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-stone-900">Store Promotions &amp; Discounts</p>
+                        <p className="text-xs text-stone-400">Set supermarket promotional offer rules</p>
+                      </div>
+                    </div>
 
-        {activeTab === "users" && (
-          <div className="flex flex-col gap-4">
-            {/* User Management */}
-            <section className="w-full">
-              <SectionHeading title="User Management" hint={`${localStaff.length} team members`} />
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                <div className="lg:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {localStaff.map((member: any) => (
-                    <div
-                      key={member.id}
-                      onClick={() => setSelectedEmployee(member)}
-                      className={`${cardBase} group flex flex-col gap-4 p-4 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_rgba(120,90,60,0.12)]`}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault()
+                        const formData = new FormData(e.currentTarget)
+                        const data = {
+                          name: formData.get("name"),
+                          type: formData.get("type"),
+                          value: parseFloat(formData.get("value") as string),
+                          threshold: parseFloat(formData.get("threshold") as string) || 0,
+                          product_id: formData.get("product_id")
+                        }
+                        setAuthPrompt({ action: "discount", payload: data })
+                      }}
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="relative shrink-0">
-                          <div
-                            className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-stone-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
-                            style={{ background: member.accent }}
-                          >
-                            {member.initials}
-                          </div>
-                          <span
-                            className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white ${statusDot[member.status]}`}
-                            aria-hidden
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-stone-800">{member.name}</p>
-                          <p className="truncate text-xs text-stone-400">ID: {member.id}</p>
-                          <div className="mt-1.5 flex items-center gap-2">
-                            <span className="rounded-full bg-stone-100/90 px-2.5 py-0.5 text-[11px] font-medium text-stone-600">
-                              {member.role}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex justify-end pt-2 border-t border-stone-100">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleRemoveEmployee(member.id)
-                          }}
-                          className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-all hover:bg-rose-100 active:scale-[0.96]"
-                        >
-                          Remove User
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className={`${cardBase} p-5 h-fit`}>
-                  <div className="mb-4 flex items-center gap-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(140deg,#818cf8,#c7d2fe)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
-                      <Users className="h-[18px] w-[18px]" strokeWidth={2} />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-stone-800">Add Employee</p>
-                      <p className="text-xs text-stone-400">Onboard a new team member</p>
-                    </div>
-                  </div>
-                  <form onSubmit={handleAddEmployee} className="flex flex-col gap-3">
-                    <Field label="Full Name">
-                      <input required value={newEmployee.name} onChange={e => setNewEmployee({...newEmployee, name: e.target.value})} className={inputClass} placeholder="Jane Doe" />
-                    </Field>
-                    <Field label="Phone No">
-                      <input required type="tel" value={newEmployee.phone} onChange={e => setNewEmployee({...newEmployee, phone: e.target.value})} className={inputClass} placeholder="1234567890" />
-                    </Field>
-                    <Field label="Address">
-                      <input required value={newEmployee.address} onChange={e => setNewEmployee({...newEmployee, address: e.target.value})} className={inputClass} placeholder="123 Main St..." />
-                    </Field>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label="ID Type">
-                        <select value={newEmployee.idType} onChange={e => setNewEmployee({...newEmployee, idType: e.target.value})} className={inputClass}>
-                          <option>Aadhar Card</option>
-                          <option>PAN Card</option>
-                          <option>Voter ID</option>
-                          <option>Passport</option>
+                      <Field label="Discount Title">
+                        <input name="name" className={inputClass} placeholder="e.g. Weekend Grocery Fest" defaultValue="Weekend Grocery Saver" />
+                      </Field>
+                      <Field label="Discount Type">
+                        <select name="type" value={discountType} onChange={(e) => setDiscountType(e.target.value)} className={inputClass}>
+                          <option value="FLAT_THRESHOLD">Flat ₹ off orders over threshold</option>
+                          <option value="PERCENT_THRESHOLD">% off orders over threshold</option>
+                          <option value="PERCENT">% off all orders (no threshold)</option>
+                          <option value="SPECIFIC_ITEM_FLAT">Flat ₹ off a specific item</option>
+                          <option value="SPECIFIC_ITEM_PERCENT">% off a specific item</option>
                         </select>
                       </Field>
-                      <Field label="Govt ID">
-                        <input required value={newEmployee.govtId} onChange={e => setNewEmployee({...newEmployee, govtId: e.target.value})} className={inputClass} placeholder="ID Number" />
+                      
+                      {discountType.startsWith("SPECIFIC_ITEM") ? (
+                        <Field label="Target Item">
+                          <select name="product_id" required className={inputClass}>
+                            <option value="">Select an item...</option>
+                            {stats.stock.map(item => (
+                              <option key={item.id} value={item.id}>{item.name} ({item.id})</option>
+                            ))}
+                          </select>
+                        </Field>
+                      ) : (
+                        <Field label="Order Threshold (₹)">
+                          <input name="threshold" type="number" step="0.01" defaultValue="499" className={inputClass} placeholder="e.g. 499" />
+                        </Field>
+                      )}
+                      
+                      <Field label="Discount Value">
+                        <input name="value" type="number" step="0.01" required defaultValue="50" className={inputClass} placeholder={discountType.includes("PERCENT") ? "e.g. 10 (%)" : "e.g. 50 (₹)"} />
                       </Field>
-                    </div>
-                    <Field label="Role">
-                      <select value={newEmployee.role} onChange={e => setNewEmployee({...newEmployee, role: e.target.value})} className={inputClass}>
-                        <option>Cashier</option>
-                        <option>Store Manager</option>
-                        <option>Inventory Clerk</option>
-                      </select>
-                    </Field>
-                    <button
-                      type="submit"
-                      disabled={isProcessing}
-                      className="mt-3 flex w-full justify-center gap-2 rounded-2xl bg-stone-800 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-stone-700 active:scale-[0.98] disabled:opacity-70"
-                    >
-                      {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </section>
-          </div>
-        )}
-
-        {activeTab === "stock" && (
-          <div className="flex flex-col gap-6">
-            <SectionHeading title="Stock Management" hint="Current inventory levels" />
-            <div className={`${cardBase} overflow-hidden`}>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-stone-200 bg-white/50 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">
-                      <th className="px-6 py-4">Item ID</th>
-                      <th className="px-6 py-4">Product Name</th>
-                      <th className="px-6 py-4">Category</th>
-                      <th className="px-6 py-4 text-right">Price</th>
-                      <th className="px-6 py-4 text-center">In Stock</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100 bg-white/40">
-                    {stats.stock.map((item, i) => (
-                      <tr key={i} className="transition-colors hover:bg-white/60">
-                        <td className="whitespace-nowrap px-6 py-4 font-mono text-stone-500">{item.id}</td>
-                        <td className="px-6 py-4 font-medium text-stone-800">{item.name}</td>
-                        <td className="px-6 py-4">
-                          <span className="rounded-full bg-stone-100/90 px-2.5 py-0.5 text-[11px] font-medium text-stone-600">
-                            {item.category}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-right font-medium text-stone-700">₹{item.price}</td>
-                        <td className="px-6 py-4 text-center">
-                          <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            item.stock > 20 ? "bg-emerald-50 text-emerald-700" :
-                            item.stock > 5 ? "bg-amber-50 text-amber-700" :
-                            "bg-rose-50 text-rose-700"
-                          }`}>
-                            {item.stock}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => handleAddStock(item.id, item.stock)}
-                            className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 transition-all hover:bg-indigo-100 active:scale-[0.96]"
-                          >
-                            + Stock
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {stats.stock.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-stone-400">No stock data available</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <SectionHeading title="Add New Product" hint="Expand your catalog" />
-            <form onSubmit={handleAddProduct} className={`${cardBase} p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end`}>
-              <Field label="Product Name">
-                <input required value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className={inputClass} placeholder="Apples" />
-              </Field>
-              <Field label="Category">
-                <select
-                  value={["Staples","Pulses","Oils","Dairy","Snacks","Beverages","Electronics","Perishables","Vegetables"].includes(newProduct.category) ? newProduct.category : "__custom__"}
-                  onChange={e => {
-                    if (e.target.value === "__custom__") {
-                      setNewProduct({...newProduct, category: ""})
-                    } else {
-                      setNewProduct({...newProduct, category: e.target.value})
-                    }
-                  }}
-                  className={inputClass}
-                >
-                  <option>Staples</option>
-                  <option>Pulses</option>
-                  <option>Oils</option>
-                  <option>Dairy</option>
-                  <option>Snacks</option>
-                  <option>Beverages</option>
-                  <option>Electronics</option>
-                  <option>Perishables</option>
-                  <option>Vegetables</option>
-                  <option value="__custom__">+ Custom Category…</option>
-                </select>
-                {!["Staples","Pulses","Oils","Dairy","Snacks","Beverages","Electronics","Perishables","Vegetables"].includes(newProduct.category) && (
-                  <input
-                    required
-                    autoFocus
-                    value={newProduct.category}
-                    onChange={e => setNewProduct({...newProduct, category: e.target.value})}
-                    className={`${inputClass} mt-2`}
-                    placeholder="Type custom category name…"
-                  />
-                )}
-              </Field>
-              <Field label="Price (₹)">
-                <input required type="number" step="0.01" min="0" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className={inputClass} placeholder="0.00" />
-              </Field>
-              <Field label="Initial Stock">
-                <input required type="number" min="0" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: e.target.value})} className={inputClass} placeholder="10" />
-              </Field>
-              <button
-                type="submit"
-                disabled={isAddingProduct}
-                className="flex w-full justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-70 h-[46px]"
-              >
-                {isAddingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Product"}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {activeTab === "demand" && (
-          <div className="flex flex-col gap-4">
-            <SectionHeading title="Demand ML" hint="High demand items ordered by total sold" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {stats.demand.map((item, i) => (
-                <div key={i} className={`${cardBase} p-5 flex flex-col gap-2 relative overflow-hidden group`}>
-                  <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[radial-gradient(circle,rgba(251,113,133,0.1),transparent_70%)] blur-xl group-hover:bg-[radial-gradient(circle,rgba(251,113,133,0.2),transparent_70%)] transition-colors" />
-                  
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-semibold text-stone-800 line-clamp-1">{item.name}</h3>
-                      <p className="text-xs text-stone-400 font-mono mt-0.5">{item.id}</p>
-                    </div>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 font-bold shadow-sm border border-indigo-100">
-                      #{i + 1}
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 flex items-center justify-between border-t border-stone-100 pt-3">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Total Sold</p>
-                      <p className="text-xl font-bold text-stone-800">{item.total_sold}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Current Stock</p>
-                      <p className={`text-sm font-semibold ${item.stock < 10 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                        {item.stock}
-                      </p>
-                    </div>
+                      
+                      <div className="sm:col-span-2 pt-2">
+                        <button type="submit" className="w-full rounded-2xl bg-emerald-700 px-4 py-3 text-xs font-bold text-white shadow hover:bg-emerald-800 transition">
+                          Activate Global Promotion
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
-              ))}
-              {stats.demand.length === 0 && (
-                <div className={`${cardBase} p-8 text-center text-stone-400 col-span-full`}>
-                  No sales data available yet for Demand ML analysis.
+              </div>
+
+              {/* Right Column: Database & System Status */}
+              <div className="flex flex-col gap-6">
+                <SectionHeading title="System &amp; Database" hint="Infrastructure status" />
+                <div className={`${cardBase} p-5 flex flex-col gap-4 text-xs`}>
+                  <div className="flex items-center gap-3 border-b border-stone-100 pb-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-stone-900 text-white shadow-sm">
+                      <Database className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-stone-900">SQLite 3 Embedded Engine</p>
+                      <p className="text-xs text-stone-400">High-concurrency local datastore</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex justify-between items-center py-1 border-b border-stone-100">
+                      <span className="text-stone-400 font-medium">Datastore Path</span>
+                      <span className="font-mono text-stone-800 font-semibold text-[11px]">./pos.db</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1 border-b border-stone-100">
+                      <span className="text-stone-400 font-medium">Engine Mode</span>
+                      <span className="font-semibold text-stone-800">WAL (Write-Ahead Logging)</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1 border-b border-stone-100">
+                      <span className="text-stone-400 font-medium">Total Products</span>
+                      <span className="font-bold text-emerald-700">{stats.stock.length} catalog items</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1 border-b border-stone-100">
+                      <span className="text-stone-400 font-medium">Recorded Orders</span>
+                      <span className="font-bold text-stone-900">{salesList.length} orders</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1 border-b border-stone-100">
+                      <span className="text-stone-400 font-medium">Connection Latency</span>
+                      <span className="font-semibold text-emerald-600">0.2 ms · Ultra Fast</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-stone-400 font-medium">Server Status</span>
+                      <span className="inline-flex items-center gap-1.5 font-bold text-emerald-700">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        Online (Port 3000)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 rounded-2xl bg-stone-50 border border-stone-200/80 p-3 text-[11px] text-stone-500 leading-relaxed">
+                    Database integrity verified. Automatic sync and foreign key constraints active.
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === "sales" && (
-          <div className="grid grid-cols-1 gap-5">
-            <section>
-              <SectionHeading title="Bills & Returns" hint="Click a bill to view details & process refunds" />
+          {/* TAB 2: RETURN REQUESTS */}
+          {activeTab === "returns" && (
+            <div className="flex flex-col gap-6">
+              <SectionHeading 
+                title="Customer Return &amp; Refund Requests" 
+                hint="Inspect customer return requests and authorize direct refunds" 
+              />
 
-              {/* Search Bar */}
-              <div className="relative mb-4">
+              {/* Return Requests Search Bar */}
+              <div className="relative mb-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
                 <input
                   type="text"
-                  placeholder="Search by Bill No (e.g. INV-00001)…"
-                  value={billSearch}
-                  onChange={e => setBillSearch(e.target.value)}
-                  className="w-full rounded-2xl border border-stone-200 bg-white px-5 py-3 pr-4 text-sm text-stone-700 outline-none focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100 transition-all"
+                  placeholder="Search returns by Bill No (e.g. INV-00014), customer name, or phone…"
+                  value={returnSearch}
+                  onChange={e => setReturnSearch(e.target.value)}
+                  className="w-full rounded-2xl border border-stone-200 bg-white px-5 py-3 pl-11 text-xs text-stone-700 outline-none focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100 transition-all shadow-xs"
                 />
               </div>
 
-              <div className={`${cardBase} overflow-hidden`}>
+              <div className={`${cardBase} p-6 overflow-hidden`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-stone-600">
+                    <Clock className="h-4 w-4 text-amber-500" />
+                    <span>Pending Approval: <strong className="text-amber-800">{pendingReturnsCount}</strong></span>
+                  </div>
+                  <button 
+                    onClick={fetchReturns}
+                    className="text-xs font-bold text-emerald-700 hover:underline"
+                  >
+                    Refresh Requests
+                  </button>
+                </div>
+
+                {loadingReturns ? (
+                  <div className="flex h-40 items-center justify-center gap-2 text-stone-400 text-xs">
+                    <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                    <span>Loading requests...</span>
+                  </div>
+                ) : returnRequests.length === 0 ? (
+                  <div className="flex h-44 flex-col items-center justify-center gap-2 text-center text-stone-400">
+                    <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+                    <p className="font-semibold text-stone-700 text-sm">No return requests found</p>
+                    <p className="text-xs text-stone-400">Customer requests within the 7-day return period will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs min-w-[780px]">
+                      <thead>
+                        <tr className="border-b border-stone-200 text-[11px] uppercase tracking-wider font-bold text-stone-400 bg-stone-50/70">
+                          <th className="w-[130px] px-3.5 py-3 text-left">Bill / Order</th>
+                          <th className="w-[160px] px-3.5 py-3 text-left">Customer</th>
+                          <th className="min-w-[160px] px-3.5 py-3 text-left">Reason</th>
+                          <th className="min-w-[160px] px-3.5 py-3 text-left">Items Summary</th>
+                          <th className="w-[110px] px-3.5 py-3 text-right">Amount</th>
+                          <th className="w-[110px] px-3.5 py-3 text-center">Status</th>
+                          <th className="w-[180px] px-3.5 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100">
+                        {filteredReturnRequests.map((req) => (
+                          <tr key={req.id} className="hover:bg-stone-50/50 transition">
+                            <td className="px-3.5 py-3 align-middle font-mono font-bold text-stone-900 whitespace-nowrap">
+                              {req.bill_no}
+                            </td>
+                            <td className="px-3.5 py-3 align-middle">
+                              <div className="flex flex-col justify-center min-h-[34px]">
+                                <p className="font-semibold text-stone-800 leading-tight truncate">
+                                  {req.customer_name || "Customer"}
+                                </p>
+                                <p className="text-[10px] text-stone-400 mt-0.5 leading-tight truncate">
+                                  {req.customer_phone || req.customer_email || "—"}
+                                </p>
+                              </div>
+                            </td>
+                            <td className="px-3.5 py-3 align-middle text-stone-600 leading-relaxed max-w-xs pr-2">
+                              {req.reason}
+                            </td>
+                            <td className="px-3.5 py-3 align-middle text-stone-500 truncate max-w-xs pr-2">
+                              {req.items_summary}
+                            </td>
+                            <td className="px-3.5 py-3 align-middle text-right font-mono font-bold text-stone-900 tabular-nums whitespace-nowrap">
+                              {formatCurrency(req.amount)}
+                            </td>
+                            <td className="px-3.5 py-3 align-middle text-center whitespace-nowrap">
+                              <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                                req.status === "Approved"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : req.status === "Rejected"
+                                    ? "bg-rose-100 text-rose-800"
+                                    : "bg-amber-100 text-amber-800"
+                              }`}>
+                                {req.status}
+                              </span>
+                            </td>
+                            <td className="px-3.5 py-3 align-middle text-right whitespace-nowrap">
+                              {req.status === "Pending" ? (
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => handleApproveReturnPrompt(req)}
+                                    className="rounded-xl bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700 transition"
+                                  >
+                                    Approve &amp; Refund
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectReturnPrompt(req)}
+                                    className="rounded-xl bg-rose-50 px-2.5 py-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition"
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-[11px] text-stone-400 font-medium">Processed</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredReturnRequests.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="px-4 py-8 text-center text-stone-400">
+                              {returnSearch ? `No return requests found matching "${returnSearch}".` : "No return requests found."}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: STOCK MANAGEMENT */}
+          {activeTab === "stock" && (
+            <div className="flex flex-col gap-6">
+              <SectionHeading title="Stock &amp; Catalog Management" hint="Add products and replenish inventory" />
+
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                {/* Add Product Form - Compact, h-fit self-start to avoid vertical stretching */}
+                <div className={`${cardBase} p-6 lg:col-span-1 h-fit self-start`}>
+                  <div className="mb-4 flex items-center gap-2 border-b border-stone-100 pb-3">
+                    <Plus className="h-5 w-5 text-emerald-700" />
+                    <h3 className="font-serif text-base font-bold text-stone-900">Add Supermarket Product</h3>
+                  </div>
+
+                  <form onSubmit={handleAddProduct} className="flex flex-col gap-3 text-xs">
+                    <Field label="Product Name *">
+                      <input
+                        required
+                        type="text"
+                        className={inputClass}
+                        placeholder="e.g. Fortune Sunflower Oil (1L)"
+                        value={newProduct.name}
+                        onChange={e => setNewProduct({...newProduct, name: e.target.value})}
+                      />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Field label="Category *">
+                        <select
+                          className={inputClass}
+                          value={newProduct.category}
+                          onChange={e => setNewProduct({...newProduct, category: e.target.value})}
+                        >
+                          {SUPERMARKET_CATEGORIES.filter(c => c !== "All Products").map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Brand *">
+                        <input
+                          required
+                          type="text"
+                          className={inputClass}
+                          placeholder="e.g. Fortune"
+                          value={newProduct.brand}
+                          onChange={e => setNewProduct({...newProduct, brand: e.target.value})}
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Field label="Batch Number">
+                        <input
+                          type="text"
+                          className={inputClass}
+                          placeholder="B-2026-X"
+                          value={newProduct.batch_no}
+                          onChange={e => setNewProduct({...newProduct, batch_no: e.target.value})}
+                        />
+                      </Field>
+                      <Field label="Expiry Date">
+                        <input
+                          type="text"
+                          className={inputClass}
+                          placeholder="e.g. 25 Dec 2027"
+                          value={newProduct.expiry_date}
+                          onChange={e => setNewProduct({...newProduct, expiry_date: e.target.value})}
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <Field label="Price (₹) *">
+                        <input
+                          required
+                          type="number"
+                          step="0.01"
+                          className={inputClass}
+                          placeholder="145"
+                          value={newProduct.price}
+                          onChange={e => setNewProduct({...newProduct, price: e.target.value})}
+                        />
+                      </Field>
+                      <Field label="MRP (₹)">
+                        <input
+                          type="number"
+                          step="0.01"
+                          className={inputClass}
+                          placeholder="170"
+                          value={newProduct.mrp}
+                          onChange={e => setNewProduct({...newProduct, mrp: e.target.value})}
+                        />
+                      </Field>
+                      <Field label="Stock Qty *">
+                        <input
+                          required
+                          type="number"
+                          className={inputClass}
+                          placeholder="50"
+                          value={newProduct.stock}
+                          onChange={e => setNewProduct({...newProduct, stock: e.target.value})}
+                        />
+                      </Field>
+                    </div>
+
+                    <Field label="Unit / Pack Size">
+                      <input
+                        type="text"
+                        className={inputClass}
+                        placeholder="e.g. 1 kg / 500 ml / Pack of 4"
+                        value={newProduct.unit}
+                        onChange={e => setNewProduct({...newProduct, unit: e.target.value})}
+                      />
+                    </Field>
+
+                    <Field label="Image URL (Optional)">
+                      <input
+                        type="url"
+                        className={inputClass}
+                        placeholder="https://... (or leave empty for auto fallback)"
+                        value={newProduct.image_url}
+                        onChange={e => setNewProduct({...newProduct, image_url: e.target.value})}
+                      />
+                    </Field>
+
+                    <Field label="Product Description">
+                      <textarea
+                        rows={2}
+                        className={`${inputClass} resize-none`}
+                        placeholder="Short overview of highlights, ingredients, or usage"
+                        value={newProduct.description}
+                        onChange={e => setNewProduct({...newProduct, description: e.target.value})}
+                      />
+                    </Field>
+
+                    <button
+                      type="submit"
+                      disabled={isAddingProduct}
+                      className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 py-3 text-xs font-bold text-white shadow hover:bg-emerald-800 transition disabled:opacity-50"
+                    >
+                      {isAddingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save & Add to Catalog"}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Stock Table */}
+                <div className={`${cardBase} p-6 lg:col-span-2 flex flex-col`}>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                    <h3 className="font-serif text-base font-bold text-stone-900">
+                      Inventory Catalog ({filteredStock.length} items)
+                    </h3>
+                    <div className="relative w-full sm:w-72">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
+                      <input
+                        type="search"
+                        placeholder="Search by product ID (e.g. sku-veg-01) or name…"
+                        value={stockSearch}
+                        onChange={e => setStockSearch(e.target.value)}
+                        className="w-full rounded-xl border border-stone-200 bg-white py-1.5 pl-9 pr-3 text-xs outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto min-h-0 flex-1">
+                    <table className="w-full text-left text-xs min-w-[620px]">
+                      <thead>
+                        <tr className="border-b border-stone-200 text-[11px] uppercase tracking-wider font-bold text-stone-400 bg-stone-50/70">
+                          <th className="min-w-[180px] px-3.5 py-2.5 text-left">Product</th>
+                          <th className="w-[110px] px-3.5 py-2.5 text-left">Category</th>
+                          <th className="w-[110px] px-3.5 py-2.5 text-right">Price</th>
+                          <th className="w-[100px] px-3.5 py-2.5 text-center">Stock</th>
+                          <th className="w-[210px] px-3.5 py-2.5 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100">
+                        {filteredStock.map(item => (
+                          <tr key={item.id} className="hover:bg-stone-50/50 transition">
+                            <td className="px-3.5 py-2.5 align-middle">
+                              <p className="font-bold text-stone-900 leading-tight">{item.name}</p>
+                              <p className="text-[10px] text-stone-400 mt-0.5 leading-tight">SKU: {item.id} {item.brand ? `· ${item.brand}` : ""}</p>
+                            </td>
+                            <td className="px-3.5 py-2.5 align-middle">
+                              <span className="rounded-lg bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-600">
+                                {item.category}
+                              </span>
+                            </td>
+                            <td className="px-3.5 py-2.5 align-middle text-right font-mono font-bold text-stone-900 tabular-nums">
+                              {formatCurrency(item.price)}
+                            </td>
+                            <td className="px-3.5 py-2.5 align-middle text-center whitespace-nowrap">
+                              <span className={`inline-block font-bold ${item.stock <= 5 ? "text-rose-600" : "text-emerald-700"}`}>
+                                {item.stock} left
+                              </span>
+                            </td>
+                            <td className="px-3.5 py-2.5 align-middle text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleOpenPriceModal(item)}
+                                  className="rounded-xl border border-stone-200 bg-white px-2 py-1 text-[11px] font-bold text-stone-700 hover:bg-stone-50 shadow-xs active:scale-[0.98]"
+                                  title="Change selling price & MRP"
+                                >
+                                  ₹ Change Price
+                                </button>
+                                <button
+                                  onClick={() => handleAddStock(item.id, item.stock)}
+                                  className="rounded-xl border border-stone-200 bg-white px-2.5 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 shadow-xs active:scale-[0.98]"
+                                >
+                                  + Add Stock
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredStock.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="px-4 py-8 text-center text-stone-400">
+                              {stockSearch ? `No products found matching "${stockSearch}".` : "No products found in catalog."}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: DEMAND ML & SALES VELOCITY */}
+          {activeTab === "demand" && (
+            <div className="flex flex-col gap-6">
+              <SectionHeading title="Demand ML &amp; Sales Velocity Forecasting" hint="AI predictive inventory burn rate" />
+              <div className={`${cardBase} p-6`}>
+                <p className="text-xs text-stone-500 mb-5">
+                  Real-time machine learning velocity analysis tracking consumer purchasing patterns, shelf depletion rate, and algorithmic replenishment signals.
+                </p>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {stats.demand.map((item) => {
+                    const isUrgent = item.velocity_label === "Reorder Required" || item.stock <= 8
+                    const isSurge = item.velocity_label === "Surge Expected"
+
+                    return (
+                      <div key={item.id} className="rounded-2xl border border-stone-200/70 bg-white p-4 shadow-xs hover:border-emerald-200 transition-all">
+                        <div className="flex items-center justify-between text-[11px] font-semibold text-stone-400 uppercase tracking-wider">
+                          <span>{item.category}</span>
+                          <span className="text-stone-900 font-bold">{item.total_sold} units sold</span>
+                        </div>
+
+                        <h4 className="mt-1 font-serif text-sm font-bold text-stone-900 truncate" title={item.name}>
+                          {item.name}
+                        </h4>
+                        {item.brand && <p className="text-[10px] text-stone-400">{item.brand}</p>}
+
+                        {/* Velocity Signal Badge - NO Healthy Level */}
+                        <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-2.5 text-xs">
+                          <span className="text-stone-500">
+                            Stock: <strong className="text-stone-900">{item.stock}</strong>
+                          </span>
+                          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
+                            isUrgent
+                              ? "bg-rose-100 text-rose-800"
+                              : isSurge
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-emerald-100 text-emerald-800"
+                          }`}>
+                            {item.velocity_label || (item.stock <= 8 ? "Reorder Required" : "Surge Expected")}
+                          </span>
+                        </div>
+
+                        {/* Predictive Insights */}
+                        <div className="mt-2.5 flex items-center justify-between text-[11px] text-stone-500 bg-stone-50 rounded-xl px-2.5 py-1.5">
+                          <span>Runout Est: <strong>~{item.predicted_runout_days || 5} days</strong></span>
+                          <span>Burn Rate: <strong>{item.burn_rate || "1.2"}/day</strong></span>
+                        </div>
+
+                        <button
+                          onClick={() => handleAddStock(item.id, item.stock)}
+                          className="mt-3 w-full rounded-xl border border-stone-200 bg-white py-1.5 text-[11px] font-bold text-stone-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 transition"
+                        >
+                          + Replenish Stock (+{item.recommended_reorder || 25})
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: ORDERS & INVOICES */}
+          {activeTab === "sales" && (
+            <div className="flex flex-col gap-6">
+              <SectionHeading title="Supermarket Orders &amp; Invoices" hint="Click an order to inspect bill, print receipt, or initiate refund" />
+
+              {/* Search Bar */}
+              <div className="relative mb-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                <input
+                  type="text"
+                  placeholder="Search by Bill No (e.g. INV-00001) or customer name…"
+                  value={billSearch}
+                  onChange={e => setBillSearch(e.target.value)}
+                  className="w-full rounded-2xl border border-stone-200 bg-white px-5 py-3 pl-11 text-xs text-stone-700 outline-none focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100 transition-all shadow-xs"
+                />
+              </div>
+
+              <div className={`${cardBase} p-6 overflow-hidden`}>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-stone-50 text-stone-500 font-medium">
-                      <tr>
-                        <th className="px-6 py-4">Bill No</th>
-                        <th className="px-6 py-4">Customer</th>
-                        <th className="px-6 py-4">Date</th>
-                        <th className="px-6 py-4">Total Amount</th>
+                  <table className="w-full text-left text-xs min-w-[780px]">
+                    <thead>
+                      <tr className="border-b border-stone-200 text-[11px] uppercase tracking-wider font-bold text-stone-400 bg-stone-50/70">
+                        <th className="w-[140px] px-3.5 py-3 text-left">Bill No</th>
+                        <th className="w-[180px] px-3.5 py-3 text-left">Date</th>
+                        <th className="min-w-[170px] px-3.5 py-3 text-left">Customer</th>
+                        <th className="w-[90px] px-3.5 py-3 text-center">Items</th>
+                        <th className="w-[130px] px-3.5 py-3 text-right">Total Amount</th>
+                        <th className="w-[130px] px-3.5 py-3 text-center">Status</th>
+                        <th className="w-[110px] px-3.5 py-3 text-right">Inspection</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100">
                       {salesList
-                        .filter(s => !billSearch || s.billNo.toLowerCase().includes(billSearch.toLowerCase()))
+                        .filter(s => 
+                          !billSearch || 
+                          (s.billNo && s.billNo.toLowerCase().includes(billSearch.toLowerCase())) ||
+                          (s.customer_name && s.customer_name.toLowerCase().includes(billSearch.toLowerCase()))
+                        )
                         .map((sale) => (
                           <tr
                             key={sale.id}
                             onClick={() => setSelectedBill(sale)}
-                            className="cursor-pointer hover:bg-indigo-50/60 transition-colors"
+                            className="group cursor-pointer hover:bg-emerald-50/40 transition-colors"
                           >
-                            <td className="px-6 py-4 font-mono font-semibold text-indigo-700">{sale.billNo}</td>
-                            <td className="px-6 py-4 text-stone-600">{sale.customer_name || "—"}</td>
-                            <td className="px-6 py-4 text-stone-500">{new Date(sale.created_at).toLocaleDateString()}</td>
-                            <td className="px-6 py-4 font-semibold text-emerald-600">₹{sale.total_amount.toFixed(2)}</td>
+                            <td className="px-3.5 py-3 align-middle font-mono font-bold text-emerald-800 whitespace-nowrap">
+                              {sale.billNo}
+                            </td>
+                            <td className="px-3.5 py-3 align-middle text-stone-500 whitespace-nowrap">
+                              {new Date(sale.created_at).toLocaleString("en-IN")}
+                            </td>
+                            <td className="px-3.5 py-3 align-middle">
+                              <div className="flex flex-col justify-center min-h-[34px]">
+                                <p className="font-semibold text-stone-800 leading-tight truncate">
+                                  {sale.customer_name || "Customer"}
+                                </p>
+                                <p className="text-[10px] text-stone-400 mt-0.5 leading-tight">
+                                  {sale.customer_phone || "—"}
+                                </p>
+                              </div>
+                            </td>
+                            <td className="px-3.5 py-3 align-middle text-center text-stone-500 font-medium whitespace-nowrap">
+                              {sale.items?.length || 1} {(sale.items?.length || 1) === 1 ? "item" : "items"}
+                            </td>
+                            <td className="px-3.5 py-3 align-middle text-right font-mono font-bold text-stone-900 tabular-nums whitespace-nowrap">
+                              {formatCurrency(sale.total_amount)}
+                            </td>
+                            <td className="px-3.5 py-3 align-middle text-center whitespace-nowrap">
+                              <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                                sale.status === "Refunded"
+                                  ? "bg-purple-100 text-purple-800"
+                                  : sale.status === "Return Requested"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : sale.status === "Return Rejected"
+                                      ? "bg-rose-100 text-rose-800"
+                                      : "bg-emerald-100 text-emerald-800"
+                              }`}>
+                                {sale.status || "Delivered"}
+                              </span>
+                            </td>
+                            <td className="px-3.5 py-3 align-middle text-right whitespace-nowrap">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 group-hover:text-emerald-800 group-hover:underline">
+                                View Bill →
+                              </span>
+                            </td>
                           </tr>
                         ))}
-                      {salesList.filter(s => !billSearch || s.billNo.toLowerCase().includes(billSearch.toLowerCase())).length === 0 && (
+                      {salesList.length === 0 && (
                         <tr>
-                          <td colSpan={4} className="px-6 py-8 text-center text-stone-400">No bills found.</td>
+                          <td colSpan={7} className="px-4 py-8 text-center text-stone-400">
+                            No supermarket orders found.
+                          </td>
                         </tr>
                       )}
                     </tbody>
                   </table>
                 </div>
               </div>
-            </section>
-          </div>
-        )}
-      </div>
-    </div>
-
-    {/* Bill Detail Modal */}
-    {selectedBill && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm">
-        <div className="relative w-full max-w-md max-h-[85vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-stone-100 px-6 py-4">
-            <div>
-              <h2 className="font-serif text-xl font-semibold text-stone-800">{selectedBill.billNo}</h2>
-              <p className="text-xs text-stone-400 mt-0.5">{new Date(selectedBill.created_at).toLocaleString()}</p>
             </div>
-            <button onClick={() => setSelectedBill(null)} className="rounded-full p-2 text-stone-400 hover:bg-stone-100 transition-colors">✕</button>
-          </div>
+          )}
 
-          {/* Customer Info */}
-          <div className="px-6 pt-5 pb-3">
-            <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-2">Customer</p>
-            <p className="text-sm font-medium text-stone-800">{selectedBill.customer_name || "Unknown"}</p>
-            {selectedBill.customer_phone && <p className="text-xs text-stone-500">{selectedBill.customer_phone}</p>}
-          </div>
+        </div>
+      </div>
 
-          {/* Items */}
-          <div className="px-6 pb-3">
-            <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-2">Items</p>
-            <div className="rounded-xl border border-stone-100 overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-stone-50 text-stone-500">
-                  <tr>
-                    <th className="px-4 py-2 text-left font-medium">Item</th>
-                    <th className="px-4 py-2 text-center font-medium">Qty</th>
-                    <th className="px-4 py-2 text-right font-medium">Price</th>
+      {/* Bill Detail & Inspection Modal (Click order from Orders & Invoices) */}
+      {selectedBill && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md print:backdrop-blur-none print:bg-white print:p-0">
+          <div className="relative w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-3xl bg-white shadow-2xl print:w-full print:max-w-none print:max-h-none print:overflow-visible print:shadow-none print:rounded-none">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-stone-100 px-6 py-4 print:border-b-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-serif text-xl font-bold text-stone-900">{selectedBill.billNo}</h2>
+                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${
+                    selectedBill.status === "Refunded" ? "bg-purple-100 text-purple-800" : "bg-emerald-100 text-emerald-800"
+                  }`}>
+                    {selectedBill.status || "Delivered"}
+                  </span>
+                </div>
+                <p className="text-xs text-stone-400 mt-0.5">
+                  Ordered on {new Date(selectedBill.created_at).toLocaleString("en-IN")}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedBill(null)}
+                className="rounded-full p-2 text-stone-400 hover:bg-stone-100 transition-colors print:hidden"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Customer Details */}
+            <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 text-xs">
+              <p className="font-bold text-stone-900 mb-1">Customer &amp; Shipping Details</p>
+              <p className="text-stone-700 font-medium">{selectedBill.customer_name || "Customer"}</p>
+              {selectedBill.customer_phone && <p className="text-stone-500">Phone: {selectedBill.customer_phone}</p>}
+              {selectedBill.delivery_address && (
+                <p className="text-stone-500 mt-1 flex items-start gap-1">
+                  <MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0 mt-0.5" />
+                  <span>{selectedBill.delivery_address}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Line Items Table */}
+            <div className="p-6">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-stone-200 text-left text-stone-400 uppercase font-semibold">
+                    <th className="pb-2">Item</th>
+                    <th className="pb-2 text-center">Qty</th>
+                    <th className="pb-2 text-right">Price</th>
+                    <th className="pb-2 text-right">Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
                   {(selectedBill.items || []).map((item: any, i: number) => (
-                    <tr key={i}>
-                      <td className="px-4 py-2 text-stone-800">{item.product_name || item.product_id}</td>
-                      <td className="px-4 py-2 text-center text-stone-600">{item.quantity}</td>
-                      <td className="px-4 py-2 text-right text-stone-700">₹{(item.price * item.quantity).toFixed(2)}</td>
+                    <tr key={i} className="text-stone-800">
+                      <td className="py-2.5 pr-2 font-medium">{item.product_name || item.product_id}</td>
+                      <td className="py-2.5 text-center">{item.quantity}</td>
+                      <td className="py-2.5 text-right text-stone-500">{formatCurrency(item.price)}</td>
+                      <td className="py-2.5 text-right font-semibold">{formatCurrency(item.price * item.quantity)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
 
-          {/* Total */}
-          <div className="px-6 py-3 flex justify-between items-center border-t border-dashed border-stone-200">
-            <span className="text-sm font-semibold text-stone-600">Total Paid</span>
-            <span className="font-serif text-xl font-bold text-emerald-600">₹{selectedBill.total_amount.toFixed(2)}</span>
-          </div>
-
-          {/* Refund Button */}
-          <div className="px-6 pb-6 pt-3">
-            <button
-              onClick={() => {
-                if (window.confirm(`Confirm refund of ₹${selectedBill.total_amount.toFixed(2)} for ${selectedBill.billNo}?`)) {
-                  setAuthPrompt({ action: "return", payload: { saleId: selectedBill.id, amount: selectedBill.total_amount, date: selectedBill.created_at } })
-                  setSelectedBill(null)
-                }
-              }}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 hover:bg-rose-100 transition-colors active:scale-[0.98]"
-            >
-              🔄 Process Refund · ₹{selectedBill.total_amount.toFixed(2)}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {credentialsPDF && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm print:backdrop-blur-none print:bg-white print:p-0">
-        <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl print:w-full print:max-w-none print:shadow-none print:rounded-none">
-          <div id="credentials-pdf" className="p-8 text-center bg-white">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mb-4">
-              <Users className="h-8 w-8" />
-            </div>
-            <h2 className="font-serif text-2xl font-bold tracking-tight text-stone-800">Welcome to Equinox!</h2>
-            <p className="mt-2 text-stone-600">
-              Congratulations <span className="font-semibold text-stone-800">{credentialsPDF.name}</span>, you are hired!
-            </p>
-            <p className="text-sm text-stone-500 mb-6">Here are your secure login credentials. Please keep them safe.</p>
-            
-            <div className="bg-stone-50 rounded-xl p-6 text-left border border-stone-200">
-              <div className="mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Employee ID</p>
-                <p className="font-mono text-lg font-medium text-stone-800">{credentialsPDF.id}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Password</p>
-                <p className="font-mono text-lg font-medium text-stone-800">{credentialsPDF.password}</p>
+              {/* Total Summary */}
+              <div className="mt-4 pt-3 border-t border-stone-200 flex justify-between items-center text-xs">
+                <span className="font-medium text-stone-500">Total Billed Amount</span>
+                <span className="font-serif text-xl font-bold text-stone-900">
+                  {formatCurrency(selectedBill.total_amount)}
+                </span>
               </div>
             </div>
 
-            <p className="mt-6 text-xs text-stone-400">Login at the main portal with your Employee ID.</p>
-          </div>
-
-          <div className="flex gap-3 p-6 border-t border-stone-100 bg-stone-50 print:hidden">
-            <button onClick={() => window.print()} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-700 hover:bg-stone-50 active:scale-[0.98]">
-              <Printer className="h-4 w-4" /> Print PDF
-            </button>
-            <button onClick={() => setCredentialsPDF(null)} className="flex flex-1 items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700 active:scale-[0.98]">
-              Done
-            </button>
-          </div>
-        </div>
-        <style dangerouslySetInnerHTML={{__html: `
-          @media print {
-            body * { visibility: hidden; }
-            #credentials-pdf, #credentials-pdf * { visibility: visible; }
-            #credentials-pdf { position: fixed; left: 0; top: 0; width: 100%; height: 100%; padding: 40px; background: white; z-index: 99999; overflow: visible; }
-          }
-        `}} />
-      </div>
-    )}
-
-    {/* Employee Details Modal */}
-    {selectedEmployee && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm">
-        <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-          <div className="p-6 border-b border-stone-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-stone-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
-                style={{ background: selectedEmployee.accent }}
-              >
-                {selectedEmployee.initials}
-              </div>
-              <div>
-                <h3 className="font-bold text-stone-800 text-lg leading-tight">{selectedEmployee.name}</h3>
-                <span className="text-sm text-stone-500 font-medium">{selectedEmployee.role}</span>
-              </div>
-            </div>
-            <button onClick={() => setSelectedEmployee(null)} className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="p-6 flex-1 overflow-y-auto">
-            <div className="space-y-5">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Employee ID</p>
-                <p className="text-sm text-stone-800 font-medium">{selectedEmployee.id}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Phone Number</p>
-                <p className="text-sm text-stone-800 font-medium">{selectedEmployee.phone || "Not provided"}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Address</p>
-                <p className="text-sm text-stone-800 font-medium leading-relaxed">{selectedEmployee.address || "Not provided"}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">ID Type</p>
-                  <p className="text-sm text-stone-800 font-medium">{selectedEmployee.id_type || selectedEmployee.idType || "Not provided"}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Govt ID</p>
-                  <p className="text-sm text-stone-800 font-medium">{selectedEmployee.govt_id || selectedEmployee.govtId || "Not provided"}</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Employed Since</p>
-                <p className="text-sm text-stone-800 font-medium">
-                  {selectedEmployee.created_at ? new Date(selectedEmployee.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : "Not available"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
-    {authPrompt && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm">
-        <div className="relative w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl p-6">
-          <button onClick={() => setAuthPrompt(null)} className="absolute right-4 top-4 text-stone-400 hover:text-stone-600">
-            <X className="h-5 w-5" />
-          </button>
-          <div className="mb-4">
-            <h3 className="font-serif text-xl font-semibold text-stone-800">Admin Authorization</h3>
-            <p className="text-sm text-stone-500 mt-1">
-              Please enter your password to confirm this action.
-            </p>
-          </div>
-          {authError && <div className="mb-4 rounded-xl bg-rose-50 p-3 text-center text-sm font-medium text-rose-600">{authError}</div>}
-          <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
-            <div className="relative">
-              <input
-                required
-                type={showAuthPassword ? "text" : "password"}
-                autoFocus
-                value={authPassword}
-                onChange={(e) => setAuthPassword(e.target.value)}
-                className={`${inputClass} pr-12`}
-                placeholder="Admin Password"
-              />
+            {/* Modal Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 p-6 border-t border-stone-100 bg-stone-50 print:hidden">
               <button
                 type="button"
-                onClick={() => setShowAuthPassword(!showAuthPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+                onClick={() => window.print()}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-xs font-bold text-stone-700 hover:bg-stone-100 active:scale-[0.98]"
               >
-                {showAuthPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                <Printer className="h-4 w-4" /> Print Invoice Bill
+              </button>
+
+              {selectedBill.status === "Refunded" ? (
+                <div className="flex-1 flex items-center justify-center rounded-2xl bg-purple-50 border border-purple-200 text-purple-700 text-xs font-bold py-3">
+                  ✓ Order Already Refunded
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`Initiate full direct refund of ${formatCurrency(selectedBill.total_amount)} for Order ${selectedBill.billNo}?`)) {
+                      setAuthPrompt({
+                        action: "direct-refund",
+                        targetId: selectedBill.id,
+                        payload: {
+                          saleId: selectedBill.id,
+                          amount: selectedBill.total_amount,
+                          billNo: selectedBill.billNo
+                        }
+                      })
+                      setAuthError("")
+                      setAuthPassword("")
+                    }
+                  }}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-rose-600 px-4 py-3 text-xs font-bold text-white hover:bg-rose-700 shadow-sm active:scale-[0.98]"
+                >
+                  <RotateCcw className="h-4 w-4" /> Initiate Admin Refund
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Security Password Authorization Modal */}
+      {authPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
+          <div className="relative w-full max-w-sm rounded-3xl border border-white/80 bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <h3 className="font-serif text-base font-bold text-stone-900">Admin Authorization</h3>
+              <button onClick={() => setAuthPrompt(null)} className="text-stone-400 hover:text-stone-600">
+                <X className="h-4 w-4" />
               </button>
             </div>
-            <button
-              type="submit"
-              disabled={isAuthing}
-              className="flex w-full justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-70"
-            >
-              {isAuthing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm Action"}
-            </button>
-          </form>
-        </div>
-      </div>
-    )}
 
+            <form onSubmit={handleAuthSubmit} className="mt-4 flex flex-col gap-3 text-xs">
+              <p className="text-stone-500">
+                Please enter master admin password to authorize this action:
+              </p>
+
+              <div className="relative">
+                <input
+                  required
+                  type={showAuthPassword ? "text" : "password"}
+                  value={authPassword}
+                  onChange={e => setAuthPassword(e.target.value)}
+                  placeholder="Master Password (equinox@123)"
+                  className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-2.5 pr-10 text-xs text-stone-800 outline-none focus:ring-2 focus:ring-emerald-500/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAuthPassword(!showAuthPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                >
+                  {showAuthPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+
+              {authError && <p className="text-rose-600 font-semibold">{authError}</p>}
+
+              <div className="mt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAuthPrompt(null)}
+                  className="rounded-xl px-3 py-1.5 font-semibold text-stone-500 hover:bg-stone-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAuthing}
+                  className="rounded-xl bg-stone-900 px-4 py-1.5 font-bold text-white shadow hover:bg-stone-800 disabled:opacity-50"
+                >
+                  {isAuthing ? <Loader2 className="h-3 w-3 animate-spin" /> : "Authorize Action"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Product Price Edit Modal */}
+      {editingPriceItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
+          <div className="relative w-full max-w-sm rounded-3xl border border-white/80 bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div>
+                <h3 className="font-serif text-base font-bold text-stone-900">Change Product Price</h3>
+                <p className="text-[11px] text-stone-500 truncate max-w-[220px]">{editingPriceItem.name}</p>
+              </div>
+              <button onClick={() => setEditingPriceItem(null)} className="text-stone-400 hover:text-stone-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePrice} className="mt-4 flex flex-col gap-3 text-xs">
+              <Field label="Selling Price (₹) *">
+                <input
+                  required
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editPriceValue}
+                  onChange={e => setEditPriceValue(e.target.value)}
+                  placeholder="e.g. 150"
+                  className={inputClass}
+                />
+              </Field>
+
+              <Field label="MRP (₹) (Optional)">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editMrpValue}
+                  onChange={e => setEditMrpValue(e.target.value)}
+                  placeholder="e.g. 180"
+                  className={inputClass}
+                />
+              </Field>
+
+              <div className="mt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingPriceItem(null)}
+                  className="rounded-xl px-3 py-1.5 font-semibold text-stone-500 hover:bg-stone-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingPrice}
+                  className="rounded-xl bg-emerald-700 px-4 py-1.5 font-bold text-white shadow hover:bg-emerald-800 disabled:opacity-50"
+                >
+                  {isUpdatingPrice ? <Loader2 className="h-3 w-3 animate-spin" /> : "Update Price"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   )
 }

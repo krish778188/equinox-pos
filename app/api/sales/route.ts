@@ -1,39 +1,89 @@
 import { NextResponse } from 'next/server'
 import sqlite3 from 'sqlite3'
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url)
+    const userEmail = searchParams.get('email')
+    const userPhone = searchParams.get('phone')
+
     const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
 
-    // Safely add columns if they don't exist yet (for existing Render deployments)
-    await new Promise<void>((resolve) => { db.run('ALTER TABLE Sales ADD COLUMN customer_name VARCHAR(255)', () => resolve()) })
-    await new Promise<void>((resolve) => { db.run('ALTER TABLE Sales ADD COLUMN customer_phone VARCHAR(50)', () => resolve()) })
+    let query = `
+      SELECT 
+        s.id, s.total_amount, s.customer_name, s.customer_phone, s.customer_email, s.delivery_address, s.status, s.created_at,
+        rr.status as return_status, rr.reason as return_reason, rr.reviewed_at as return_reviewed_at
+      FROM Sales s
+      LEFT JOIN ReturnRequests rr ON rr.sale_id = s.id
+    `
+    const params: any[] = []
+
+    if (userEmail || userPhone) {
+      const conditions: string[] = []
+      if (userEmail) {
+        conditions.push('LOWER(s.customer_email) = LOWER(?)')
+        params.push(userEmail)
+      }
+      if (userPhone) {
+        conditions.push('s.customer_phone = ?')
+        params.push(userPhone)
+      }
+      query += ` WHERE ${conditions.join(' OR ')}`
+    }
+
+    query += ' ORDER BY s.created_at DESC'
 
     const sales = await new Promise<any[]>((resolve, reject) => {
-      db.all('SELECT id, total_amount, customer_name, customer_phone, created_at FROM Sales ORDER BY created_at DESC', (err, rows) => {
+      db.all(query, params, (err, rows) => {
         if (err) return reject(err)
-        resolve(rows)
+        resolve(rows || [])
       })
     })
 
     // Fetch line items with product names for each sale
-    const salesWithItems = await Promise.all(sales.map(sale => new Promise<any>((resolve, reject) => {
-      db.all(
-        `SELECT li.product_id, li.quantity, p.name as product_name, p.price 
-         FROM Line_Items li 
-         LEFT JOIN Products p ON p.id = li.product_id 
-         WHERE li.sale_id = ?`,
-        [sale.id],
-        (err, items) => {
-          if (err) return reject(err)
-          resolve({
-            ...sale,
-            billNo: `INV-${sale.id.toString().padStart(5, '0')}`,
-            items
+    const salesWithItems = await Promise.all(
+      sales.map(
+        (sale) =>
+          new Promise<any>((resolve, reject) => {
+            db.all(
+              `SELECT li.product_id, li.quantity, p.name as product_name, p.price, p.brand, p.image_url, p.unit
+               FROM Line_Items li 
+               LEFT JOIN Products p ON p.id = li.product_id 
+               WHERE li.sale_id = ?`,
+              [sale.id],
+              (err, items) => {
+                if (err) return reject(err)
+
+                const saleDate = new Date(sale.created_at || Date.now())
+                const returnDeadline = new Date(saleDate.getTime() + 7 * 24 * 60 * 60 * 1000)
+                const now = new Date()
+                const daysRemaining = Math.max(0, Math.ceil((returnDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+                const isReturnEligible = daysRemaining > 0 && 
+                  sale.status !== 'Refunded' && 
+                  sale.status !== 'Return Requested' && 
+                  sale.status !== 'Return Rejected' &&
+                  sale.return_status !== 'Approved' &&
+                  sale.return_status !== 'Pending' &&
+                  sale.return_status !== 'Rejected'
+
+                resolve({
+                  ...sale,
+                  billNo: `INV-${sale.id.toString().padStart(5, '0')}`,
+                  orderId: `ORD-2026-${sale.id.toString().padStart(4, '0')}`,
+                  lastReturnDate: returnDeadline.toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                  }),
+                  daysRemaining,
+                  isReturnEligible,
+                  items: items || []
+                })
+              }
+            )
           })
-        }
       )
-    })))
+    )
 
     db.close()
     return NextResponse.json({ success: true, sales: salesWithItems })

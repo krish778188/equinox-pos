@@ -17,9 +17,8 @@ const fraunces = Fraunces({
 })
 
 export const metadata: Metadata = {
-  title: 'Ledger POS — Point of Sale & Inventory',
-  description: 'Modern point of sale and inventory dashboard with demand forecasting',
-  generator: 'v0.app',
+  title: 'Equinox Supermarket — Fresh Groceries & Daily Essentials',
+  description: 'Modern supermarket app with fresh produce, groceries, household essentials, and fast doorstep delivery',
   icons: {
     icon: [
       {
