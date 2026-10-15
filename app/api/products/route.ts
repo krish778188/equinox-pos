@@ -1,17 +1,33 @@
 import { NextResponse } from "next/server"
-import sqlite3 from "sqlite3"
+import { getDb, getDbPath } from "@/lib/db"
 
 export async function GET() {
   try {
-    const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
-    const products: any = await new Promise((resolve, reject) => {
+    const db = getDb()
+    let products: any = await new Promise((resolve, reject) => {
       db.all('SELECT * FROM Products ORDER BY category, name', (err, rows) => {
         if (err) return reject(err)
-        resolve(rows)
+        resolve(rows || [])
       })
     })
+
+    if (!products || products.length === 0) {
+      try {
+        const initModule = require("../../../init-db.js")
+        await initModule.initDb(getDbPath())
+        products = await new Promise((resolve, reject) => {
+          db.all('SELECT * FROM Products ORDER BY category, name', (err, rows) => {
+            if (err) return reject(err)
+            resolve(rows || [])
+          })
+        })
+      } catch (e) {
+        console.error("Auto-seed error in GET /api/products:", e)
+      }
+    }
+
     db.close()
-    return NextResponse.json({ products })
+    return NextResponse.json({ products: products || [] })
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 })
   }
@@ -50,7 +66,7 @@ export async function POST(request: Request) {
       else finalImageUrl = "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&auto=format&fit=crop&q=80"
     }
 
-    const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
+    const db = getDb()
     await new Promise((resolve, reject) => {
       db.run(
         `INSERT INTO Products (id, name, category, price, stock, brand, batch_no, expiry_date, description, image_url, unit, mrp)
@@ -99,7 +115,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const { id, stockDelta, price, mrp } = await request.json()
-    const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
+    const db = getDb()
 
     if (price !== undefined) {
       await new Promise((resolve, reject) => {

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
-import sqlite3 from "sqlite3"
+import { getDb } from "@/lib/db"
 
 export async function GET() {
   try {
-    const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
+    const db = getDb()
     const discounts: any = await new Promise((resolve, reject) => {
       db.all('SELECT * FROM Discounts ORDER BY id DESC', (err, rows) => {
         if (err) return reject(err)
@@ -20,7 +20,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const { name, type, value, threshold, product_id } = await request.json()
-    const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
+    const db = getDb()
     
     // Deactivate all others first (optional rule, but standard for global store discounts)
     await new Promise((resolve) => {

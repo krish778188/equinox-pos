@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "setup": "node init-db.js",
+    "predev": "node init-db.js",
     "dev": "next dev --webpack",
+    "prebuild": "node init-db.js",
     "build": "next build --webpack",
     "start": "next start"
   },
@@ -14,8 +17,6 @@
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
     "next": "16.3.3",
-    "puppeteer": "^19.0.0",
-    "puppeteer-screen-recorder": "^3.0.6",
     "react": "^19",
     "react-dom": "^19",
     "shadcn": "^4.11.0",

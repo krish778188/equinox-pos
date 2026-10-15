@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import sqlite3 from "sqlite3"
+import { getDb } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Please enter your email/mobile and password." }, { status: 400 })
     }
 
-    const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
+    const db = getDb()
 
     // 1. Check Users table first (by email, mobile, or id)
     const user: any = await new Promise((resolve) => {

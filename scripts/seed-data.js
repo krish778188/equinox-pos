@@ -1,7 +1,11 @@
 const sqlite3 = require('sqlite3');
-const db = new sqlite3.Database(process.env.DB_PATH || './pos.db');
+const path = require('path');
+const fs = require('fs');
 
-async function run() {
+async function run(existingDb = null) {
+  const db = existingDb || new sqlite3.Database(process.env.DB_PATH || path.resolve(process.cwd(), 'pos.db'));
+  const shouldClose = !existingDb;
+
   console.log("Seeding verified products and order history into pos.db...");
 
   const runAsync = (sql, params = []) => new Promise((resolve, reject) => {
@@ -11,34 +15,25 @@ async function run() {
     });
   });
 
-  // 1. Fix broken images
-  await runAsync(`UPDATE Products SET image_url = 'https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=600&auto=format&fit=crop&q=80' WHERE id = 'sku-bty-01'`);
-  await runAsync(`UPDATE Products SET image_url = 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=600&auto=format&fit=crop&q=80' WHERE id = 'sku-bty-03'`);
-  await runAsync(`UPDATE Products SET image_url = 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80' WHERE id = 'sku-bty-05'`);
-
-  // 2. Add 'Others' category products with genuine verified photographs
-  const newProducts = [
-    ['sku-oth-01', 'Stainless Steel Vegetable Peeler', 'Others', 129.00, 40, 'Solimo', 'B-OTH-101', 'N/A', 'Ergonomic stainless steel dual-blade swivel peeler for smooth vegetable and fruit peeling.', 'https://upload.wikimedia.org/wikipedia/commons/2/20/Peeler_01_Pengo.jpg', '1 unit', 199.00],
-    ['sku-oth-02', 'Classic Ceramic Coffee Mug (350ml)', 'Others', 179.00, 35, 'ClayCraft', 'B-OTH-102', 'N/A', 'Microwave and dishwasher safe handcrafted matte ceramic mug for coffee, tea and hot beverages.', 'https://upload.wikimedia.org/wikipedia/commons/7/70/Coffee_mugs_cups.jpg', '1 piece', 299.00],
-    ['sku-oth-03', 'Automatic Windproof Compact Umbrella', 'Others', 349.00, 25, 'SunGuard', 'B-OTH-103', 'N/A', 'One-touch auto open & close heavy-duty windproof umbrella with reinforced ribs and water-repellent canopy.', 'https://upload.wikimedia.org/wikipedia/commons/9/9d/Umbrella.jpg', '1 unit', 499.00],
-    ['sku-oth-04', 'Multi-Purpose Stainless Kitchen Scissors', 'Others', 149.00, 30, 'Scotch', 'B-OTH-104', 'N/A', 'Heavy-duty rust-resistant stainless steel household and kitchen shears with comfort-grip handle.', 'https://upload.wikimedia.org/wikipedia/commons/3/30/Scissors_collection.jpg', '1 pair', 220.00],
-    ['sku-oth-05', 'Eco-Friendly Canvas Shopping Tote Bag', 'Others', 99.00, 50, 'EcoGreen', 'B-OTH-105', 'N/A', 'Durable reusable heavy-duty natural cotton canvas tote bag with reinforced shoulder straps.', 'https://upload.wikimedia.org/wikipedia/commons/8/89/Totebag.jpg', '1 bag', 150.00],
-    ['sku-oth-06', 'Duracell AA Alkaline Batteries (Pack of 4)', 'Others', 160.00, 45, 'Duracell', 'B-OTH-106', 'N/A', 'Long-lasting 1.5V alkaline AA batteries for clocks, remotes, wireless mice, and electronic toys.', 'https://upload.wikimedia.org/wikipedia/commons/4/47/AA_batteries.JPG', 'Pack of 4', 180.00]
-  ];
-
-  for (const p of newProducts) {
-    await runAsync(`
-      INSERT INTO Products (id, name, category, price, stock, brand, batch_no, expiry_date, description, image_url, unit, mrp)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET
-        name=excluded.name, category=excluded.category, price=excluded.price,
-        stock=excluded.stock, brand=excluded.brand, batch_no=excluded.batch_no,
-        expiry_date=excluded.expiry_date, description=excluded.description,
-        image_url=excluded.image_url, unit=excluded.unit, mrp=excluded.mrp
-    `, p);
+  // 1. Seed all 41 verified products from products-data.json
+  const productsFilePath = path.join(__dirname, 'products-data.json');
+  if (fs.existsSync(productsFilePath)) {
+    const products = JSON.parse(fs.readFileSync(productsFilePath, 'utf8'));
+    for (const p of products) {
+      await runAsync(`
+        INSERT INTO Products (id, name, category, price, stock, brand, batch_no, expiry_date, description, image_url, unit, mrp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          name=excluded.name, category=excluded.category, price=excluded.price,
+          stock=excluded.stock, brand=excluded.brand, batch_no=excluded.batch_no,
+          expiry_date=excluded.expiry_date, description=excluded.description,
+          image_url=excluded.image_url, unit=excluded.unit, mrp=excluded.mrp
+      `, [p.id, p.name, p.category, p.price, p.stock, p.brand, p.batch_no, p.expiry_date, p.description, p.image_url, p.unit, p.mrp]);
+    }
+    console.log(`Loaded ${products.length} catalog products successfully.`);
   }
 
-  // 3. Seed default order history for Demo Shopper (user@equinox.com)
+  // 2. Seed default order history for Demo Shopper (user@equinox.com)
   const now = new Date();
   const d2 = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19);
   const d4 = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19);
@@ -95,7 +90,7 @@ async function run() {
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-hsd-02', 1)`, [o5.lastID]);
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-lfs-01', 1)`, [o5.lastID]);
 
-  // 4. Seed default return requests for admin portal
+  // 3. Seed default return requests for admin portal
   await runAsync(`DELETE FROM ReturnRequests`);
 
   // Request 1: Pending request on Order 2
@@ -106,6 +101,7 @@ async function run() {
   await runAsync(`UPDATE Sales SET status = 'Return Requested' WHERE id = ?`, [o2.lastID]);
 
   // Customer 2: Priya Patel (Pending return request)
+  await runAsync(`DELETE FROM Sales WHERE customer_email = 'priya@example.com'`);
   const oPriya = await runAsync(`
     INSERT INTO Sales (total_amount, customer_name, customer_phone, customer_email, status, delivery_address, created_at)
     VALUES (485.00, 'Priya Patel', '9812345678', 'priya@example.com', 'Return Requested', 'Flat 102, Palm Meadows, Whitefield, Bengaluru - 560066', ?)
@@ -125,11 +121,16 @@ async function run() {
   `, [o3.lastID, `INV-${o3.lastID.toString().padStart(5, '0')}`, d7, d4]);
 
   console.log("Seeding completed successfully with default return requests and catalog!");
-  db.close();
+  if (shouldClose) {
+    db.close();
+  }
 }
 
-run().catch((err) => {
-  console.error("Seeding error:", err);
-  db.close();
-  process.exit(1);
-});
+if (require.main === module) {
+  run().catch((err) => {
+    console.error("Seeding error:", err);
+    process.exit(1);
+  });
+}
+
+module.exports = { run };

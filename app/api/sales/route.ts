@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import sqlite3 from 'sqlite3'
+import { getDb, getDbPath } from '@/lib/db'
 
 export async function GET(req: Request) {
   try {
@@ -7,7 +7,7 @@ export async function GET(req: Request) {
     const userEmail = searchParams.get('email')
     const userPhone = searchParams.get('phone')
 
-    const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
+    const db = getDb()
 
     let query = `
       SELECT 
@@ -33,12 +33,27 @@ export async function GET(req: Request) {
 
     query += ' ORDER BY s.created_at DESC'
 
-    const sales = await new Promise<any[]>((resolve, reject) => {
+    let sales = await new Promise<any[]>((resolve, reject) => {
       db.all(query, params, (err, rows) => {
         if (err) return reject(err)
         resolve(rows || [])
       })
     })
+
+    if (!sales || sales.length === 0) {
+      try {
+        const initModule = require("../../../init-db.js")
+        await initModule.initDb(getDbPath())
+        sales = await new Promise<any[]>((resolve, reject) => {
+          db.all(query, params, (err, rows) => {
+            if (err) return reject(err)
+            resolve(rows || [])
+          })
+        })
+      } catch (e) {
+        console.error("Auto-seed error in sales:", e)
+      }
+    }
 
     // Fetch line items with product names for each sale
     const salesWithItems = await Promise.all(

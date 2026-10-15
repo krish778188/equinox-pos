@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import path from 'path'
-import sqlite3 from 'sqlite3'
+import { getDb } from '@/lib/db'
 
 const execAsync = promisify(exec)
 
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { items, customer, bags, discountCode, deliveryAddress } = body
     
-    const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
+    const db = getDb()
 
     // Fetch active discount
     let activeDiscount = null

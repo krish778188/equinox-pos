@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import sqlite3 from "sqlite3"
+import { getDb } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     const cleanEmail = email.trim().toLowerCase()
     const cleanMobile = mobile.trim()
 
-    const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
+    const db = getDb()
 
     // Check if email or mobile already registered
     const existing = await new Promise<any>((resolve) => {

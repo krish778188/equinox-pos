@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-import sqlite3 from 'sqlite3'
+import { getDb, getDbPath } from '@/lib/db'
 
 export async function GET() {
   try {
-    const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
+    const db = getDb()
 
-    const requests = await new Promise<any[]>((resolve, reject) => {
+    let requests = await new Promise<any[]>((resolve, reject) => {
       db.all(
         'SELECT * FROM ReturnRequests ORDER BY created_at DESC',
         (err, rows) => {
@@ -14,6 +14,24 @@ export async function GET() {
         }
       )
     })
+
+    if (!requests || requests.length === 0) {
+      try {
+        const initModule = require("../../../init-db.js")
+        await initModule.initDb(getDbPath())
+        requests = await new Promise<any[]>((resolve, reject) => {
+          db.all(
+            'SELECT * FROM ReturnRequests ORDER BY created_at DESC',
+            (err, rows) => {
+              if (err) return reject(err)
+              resolve(rows || [])
+            }
+          )
+        })
+      } catch (e) {
+        console.error("Auto-seed error in returns:", e)
+      }
+    }
 
     db.close()
     return NextResponse.json({ success: true, requests })
@@ -28,7 +46,7 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { action = "create" } = body
 
-    const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
+    const db = getDb()
 
     // 1. User submits return request
     if (action === "create" || action === "request") {

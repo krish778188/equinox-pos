@@ -1,16 +1,31 @@
 import { NextResponse } from "next/server"
-import sqlite3 from "sqlite3"
+import { getDb, getDbPath } from "@/lib/db"
 
 export async function GET() {
   try {
-    const db = new sqlite3.Database(process.env.DB_PATH || './pos.db')
+    const db = getDb()
     
-    const stock: any = await new Promise((resolve, reject) => {
+    let stock: any = await new Promise((resolve, reject) => {
       db.all('SELECT * FROM Products ORDER BY category, name', (err, rows) => {
         if (err) return reject(err)
-        resolve(rows)
+        resolve(rows || [])
       })
     })
+
+    if (!stock || stock.length === 0) {
+      try {
+        const initModule = require("../../../init-db.js")
+        await initModule.initDb(getDbPath())
+        stock = await new Promise((resolve, reject) => {
+          db.all('SELECT * FROM Products ORDER BY category, name', (err, rows) => {
+            if (err) return reject(err)
+            resolve(rows || [])
+          })
+        })
+      } catch (e) {
+        console.error("Auto-seed error in admin-stats:", e)
+      }
+    }
 
     const demand: any = await new Promise((resolve, reject) => {
       const query = `
