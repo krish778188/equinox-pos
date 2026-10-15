@@ -10,7 +10,8 @@ import {
   History,
   Store,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  MapPin
 } from "lucide-react"
 
 export type NavKey = "shop" | "returns" | "stock" | "demand" | "sales" | "settings"
@@ -174,6 +175,12 @@ export function Sidebar({
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-bold text-stone-900">{user?.name || "Shopper"}</p>
             <p className="truncate text-[10px] text-stone-400 capitalize">{user?.role === "Admin" ? "Store Admin" : "Verified Customer"}</p>
+            {user?.role !== "Admin" && (
+              <p className="mt-0.5 truncate text-[10px] font-medium text-emerald-700 flex items-center gap-1" title={user?.address || "IIIT Nagpur, waranga, Nagpur-441108"}>
+                <MapPin className="h-2.5 w-2.5 shrink-0" />
+                <span className="truncate">{user?.address || "IIIT Nagpur, waranga, Nagpur-441108"}</span>
+              </p>
+            )}
           </div>
         </div>
       </div>

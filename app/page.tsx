@@ -8,7 +8,7 @@ import { AdminPortal } from "@/components/pos/admin-portal"
 import { SupermarketAuth } from "@/components/auth/supermarket-auth"
 import { OrderHistoryModal } from "@/components/supermarket/order-history-modal"
 import { type Product, SUPERMARKET_CATEGORIES } from "@/lib/pos-data"
-import { Moon, Sun } from "lucide-react"
+import { Moon, Sun, MapPin } from "lucide-react"
 
 export default function Page() {
   const [active, setActive] = useState<NavKey>("shop")
@@ -27,6 +27,11 @@ export default function Page() {
     if (saved) {
       try {
         const u = JSON.parse(saved)
+        // Ensure default demo user address is updated to IIIT Nagpur
+        if (u && (u.email === "user@equinox.com" || u.role !== "Admin") && (!u.address || u.address.includes("Bellandur") || u.address.includes("Bengaluru"))) {
+          u.address = "IIIT Nagpur, waranga, Nagpur-441108"
+          localStorage.setItem("supermarket_user", JSON.stringify(u))
+        }
         setLoggedInUser(u)
       } catch (e) {}
     }
@@ -253,12 +258,14 @@ export default function Page() {
                 <span>Admin Console Live</span>
               </div>
             ) : (
-              <div className="hidden sm:flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3.5 py-1.5 text-xs font-semibold text-emerald-800 shadow-xs backdrop-blur-xl">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              <div 
+                className="hidden sm:flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3.5 py-1.5 text-xs font-semibold text-emerald-850 shadow-xs backdrop-blur-xl"
+                title={loggedInUser?.address || "IIIT Nagpur, waranga, Nagpur-441108"}
+              >
+                <MapPin className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
+                <span className="truncate max-w-[260px]">
+                  Delivering to: <strong className="text-emerald-950 font-bold">{loggedInUser?.address || "IIIT Nagpur, waranga, Nagpur-441108"}</strong>
                 </span>
-                <span>Express Delivery Live</span>
               </div>
             )}
 

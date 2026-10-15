@@ -79,7 +79,7 @@ async function run(existingDb = null) {
   // Order 1: 2 days ago (STATUS: Order Placed - ready for admin to mark Delivered!)
   const o1 = await runAsync(`
     INSERT INTO Sales (total_amount, customer_name, customer_phone, customer_email, status, delivery_address, payment_method, payment_id, upi_ref_id, created_at)
-    VALUES (585.00, 'Demo Shopper', '9876543210', 'user@equinox.com', 'Order Placed', 'Flat 402, Green Glen Layout, Bellandur, Bengaluru - 560103', 'UPI (krishraj453@okicici)', 'EQX-UPI-98421092', '428910928341', ?)
+    VALUES (585.00, 'Demo Shopper', '9876543210', 'user@equinox.com', 'Order Placed', 'IIIT Nagpur, waranga, Nagpur-441108', 'UPI (krishraj453@okicici)', 'EQX-UPI-98421092', '428910928341', ?)
   `, [d2]);
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-gro-01', 1)`, [o1.lastID]);
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-gro-03', 1)`, [o1.lastID]);
@@ -88,7 +88,7 @@ async function run(existingDb = null) {
   // Order 2: 4 days ago (ELIGIBLE: ~3 days remaining)
   const o2 = await runAsync(`
     INSERT INTO Sales (total_amount, customer_name, customer_phone, customer_email, status, delivery_address, payment_method, payment_id, upi_ref_id, created_at)
-    VALUES (560.00, 'Demo Shopper', '9876543210', 'user@equinox.com', 'Delivered', 'Flat 402, Green Glen Layout, Bellandur, Bengaluru - 560103', 'UPI (krishraj453@okicici)', 'EQX-UPI-87410294', '428987410294', ?)
+    VALUES (560.00, 'Demo Shopper', '9876543210', 'user@equinox.com', 'Delivered', 'IIIT Nagpur, waranga, Nagpur-441108', 'UPI (krishraj453@okicici)', 'EQX-UPI-87410294', '428987410294', ?)
   `, [d4]);
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-bty-02', 1)`, [o2.lastID]);
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-snk-01', 1)`, [o2.lastID]);
@@ -97,7 +97,7 @@ async function run(existingDb = null) {
   // Order 3: 7 days ago (REFUNDED)
   const o3 = await runAsync(`
     INSERT INTO Sales (total_amount, customer_name, customer_phone, customer_email, status, delivery_address, payment_method, payment_id, upi_ref_id, created_at)
-    VALUES (490.00, 'Demo Shopper', '9876543210', 'user@equinox.com', 'Refunded', 'Flat 402, Green Glen Layout, Bellandur, Bengaluru - 560103', 'UPI (krishraj453@okicici)', 'EQX-UPI-76319284', '428976319284', ?)
+    VALUES (490.00, 'Demo Shopper', '9876543210', 'user@equinox.com', 'Refunded', 'IIIT Nagpur, waranga, Nagpur-441108', 'UPI (krishraj453@okicici)', 'EQX-UPI-76319284', '428976319284', ?)
   `, [d7]);
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-lfs-03', 1)`, [o3.lastID]);
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-stn-01', 2)`, [o3.lastID]);
@@ -105,7 +105,7 @@ async function run(existingDb = null) {
   // Order 4: 14 days ago (EXPIRED - NOT ELIGIBLE)
   const o4 = await runAsync(`
     INSERT INTO Sales (total_amount, customer_name, customer_phone, customer_email, status, delivery_address, payment_method, payment_id, upi_ref_id, created_at)
-    VALUES (445.00, 'Demo Shopper', '9876543210', 'user@equinox.com', 'Delivered', 'Flat 402, Green Glen Layout, Bellandur, Bengaluru - 560103', 'Cash on Delivery', 'EQX-COD-49102834', 'N/A', ?)
+    VALUES (445.00, 'Demo Shopper', '9876543210', 'user@equinox.com', 'Delivered', 'IIIT Nagpur, waranga, Nagpur-441108', 'Cash on Delivery', 'EQX-COD-49102834', 'N/A', ?)
   `, [d14]);
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-gro-02', 1)`, [o4.lastID]);
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-gro-04', 1)`, [o4.lastID]);
@@ -114,11 +114,14 @@ async function run(existingDb = null) {
   // Order 5: 28 days ago (EXPIRED - NOT ELIGIBLE)
   const o5 = await runAsync(`
     INSERT INTO Sales (total_amount, customer_name, customer_phone, customer_email, status, delivery_address, payment_method, payment_id, upi_ref_id, created_at)
-    VALUES (1085.00, 'Demo Shopper', '9876543210', 'user@equinox.com', 'Delivered', 'Flat 402, Green Glen Layout, Bellandur, Bengaluru - 560103', 'Cash on Delivery', 'EQX-COD-28491029', 'N/A', ?)
+    VALUES (1085.00, 'Demo Shopper', '9876543210', 'user@equinox.com', 'Delivered', 'IIIT Nagpur, waranga, Nagpur-441108', 'Cash on Delivery', 'EQX-COD-28491029', 'N/A', ?)
   `, [d28]);
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-hsd-01', 1)`, [o5.lastID]);
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-hsd-02', 1)`, [o5.lastID]);
   await runAsync(`INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, 'sku-lfs-01', 1)`, [o5.lastID]);
+
+  // Ensure Demo Shopper user address is set in database
+  await runAsync(`UPDATE Users SET address = 'IIIT Nagpur, waranga, Nagpur-441108' WHERE email = 'user@equinox.com'`).catch(() => {});
 
   // 3. Seed default return requests for admin portal
   await runAsync(`DELETE FROM ReturnRequests`);

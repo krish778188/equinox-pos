@@ -35,7 +35,7 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
   const [formData, setFormData] = useState({
     name: user?.name || "",
     phone: user?.mobile || user?.phone || "",
-    address: user?.address || "",
+    address: user?.address || "IIIT Nagpur, waranga, Nagpur-441108",
     carryBags: 0,
   })
 
@@ -52,7 +52,7 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
         ...prev,
         name: prev.name || user.name || "",
         phone: prev.phone || user.mobile || user.phone || "",
-        address: prev.address || user.address || "",
+        address: prev.address || user.address || "IIIT Nagpur, waranga, Nagpur-441108",
       }))
     }
   }, [user, isOpen])
@@ -245,7 +245,7 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                     onChange={e => setFormData({ ...formData, address: e.target.value })}
                     className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs text-stone-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 resize-none"
                     rows={2}
-                    placeholder="Flat / House No, Street, Landmark, Area, Pincode"
+                    placeholder="IIIT Nagpur, waranga, Nagpur-441108"
                   />
                   <label className="flex items-center gap-2 cursor-pointer mt-1">
                     <input

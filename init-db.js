@@ -36,8 +36,10 @@ async function initDb(customDbPath = null) {
   // Ensure default demo user exists
   await runAsync(`
     INSERT OR IGNORE INTO Users (name, email, mobile, password, role, address)
-    VALUES ('Demo Shopper', 'user@equinox.com', '9876543210', 'user123', 'user', 'Flat 402, Green Glen Layout, Bellandur, Bengaluru - 560103')
+    VALUES ('Demo Shopper', 'user@equinox.com', '9876543210', 'user123', 'user', 'IIIT Nagpur, waranga, Nagpur-441108')
   `);
+  await runAsync(`UPDATE Users SET address = 'IIIT Nagpur, waranga, Nagpur-441108' WHERE email = 'user@equinox.com'`).catch(() => {});
+  await runAsync(`UPDATE Sales SET delivery_address = 'IIIT Nagpur, waranga, Nagpur-441108' WHERE customer_email = 'user@equinox.com'`).catch(() => {});
 
   // Ensure admin user exists
   await runAsync(`

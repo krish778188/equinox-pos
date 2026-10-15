@@ -173,6 +173,9 @@ export function SupermarketAuth({ onSuccess }: { onSuccess: (user: any) => void 
               <div><span className="font-medium text-stone-400">Email:</span> user@equinox.com</div>
               <div><span className="font-medium text-stone-400">Pass:</span> user123</div>
             </div>
+            <div className="mt-1.5 pt-1.5 border-t border-emerald-200/50 text-[11px] text-stone-600 truncate" title="IIIT Nagpur, waranga, Nagpur-441108">
+              <span className="font-medium text-stone-400">Address:</span> IIIT Nagpur, waranga, Nagpur-441108
+            </div>
           </div>
         )}
 
@@ -325,7 +328,7 @@ export function SupermarketAuth({ onSuccess }: { onSuccess: (user: any) => void 
                   value={signupForm.address}
                   onChange={(e) => setSignupForm({ ...signupForm, address: e.target.value })}
                   className="w-full rounded-2xl border border-white/80 bg-white/90 px-4 py-2.5 pl-10 text-sm text-stone-800 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100/70"
-                  placeholder="Flat / Street, City, Pincode"
+                  placeholder="IIIT Nagpur, waranga, Nagpur-441108"
                 />
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
               </div>
