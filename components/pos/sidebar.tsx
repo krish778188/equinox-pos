@@ -177,32 +177,12 @@ export function Sidebar({
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-bold text-stone-900">{user?.name || "Shopper"}</p>
             <p className="truncate text-[10px] text-stone-400 capitalize">{user?.role === "Admin" ? "Store Admin" : "Verified Customer"}</p>
-            {user?.role !== "Admin" && user?.address ? (
-              <div className="mt-0.5 flex items-center justify-between gap-1">
-                <p className="truncate text-[10px] font-medium text-emerald-700 flex items-center gap-1 min-w-0" title={user.address}>
-                  <MapPin className="h-2.5 w-2.5 shrink-0" />
-                  <span className="truncate">{user.address}</span>
-                </p>
-                {onChangeAddress && (
-                  <button
-                    type="button"
-                    onClick={onChangeAddress}
-                    className="text-[9px] font-bold text-emerald-800 hover:text-emerald-950 underline shrink-0 cursor-pointer"
-                  >
-                    Edit
-                  </button>
-                )}
-              </div>
-            ) : user?.role !== "Admin" ? (
-              <button
-                type="button"
-                onClick={onChangeAddress}
-                className="mt-1 flex items-center gap-1 text-[10px] font-bold text-amber-700 hover:text-amber-900 transition cursor-pointer"
-              >
-                <MapPin className="h-2.5 w-2.5 text-amber-600 shrink-0" />
-                <span>+ Add Address</span>
-              </button>
-            ) : null}
+            {user?.role !== "Admin" && user?.address && (
+              <p className="mt-0.5 truncate text-[10px] font-medium text-emerald-700 flex items-center gap-1 min-w-0" title={user.address}>
+                <MapPin className="h-2.5 w-2.5 shrink-0" />
+                <span className="truncate">{user.address}</span>
+              </p>
+            )}
           </div>
         </div>
       </div>
