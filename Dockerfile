@@ -31,6 +31,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/backend/pos_backend ./backend/pos_backend
 COPY --from=builder /app/schema.sql ./schema.sql
 COPY --from=builder /app/init-db.js ./init-db.js
+COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/next.config.mjs ./next.config.mjs
 
 # Create data directory for persistent SQLite storage
 RUN mkdir -p /data
