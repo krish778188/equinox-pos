@@ -9,9 +9,19 @@ const execAsync = promisify(exec)
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { items, customer, bags, discountCode, deliveryAddress } = body
-    
+    const { items, customer, bags, discountCode, deliveryAddress, paymentMethod, paymentId } = body
+
     const db = getDb()
+
+    // Ensure payment method & ID
+    const chosenMethod = paymentMethod || 'UPI (krishraj453@okicici)'
+    const chosenId = paymentId || (
+      chosenMethod.startsWith('UPI') 
+        ? `UPI-TXN-${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`
+        : chosenMethod === 'Cash on Delivery'
+          ? `COD-PAY-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
+          : `CARD-TXN-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
+    )
 
     // Fetch active discount
     let activeDiscount = null
@@ -88,14 +98,16 @@ export async function POST(req: Request) {
 
       const saleId = await new Promise<number>((resolve, reject) => {
         db.run(
-          `INSERT INTO Sales (total_amount, customer_name, customer_phone, customer_email, delivery_address, status)
-           VALUES (?, ?, ?, ?, ?, 'Delivered')`,
+          `INSERT INTO Sales (total_amount, customer_name, customer_phone, customer_email, delivery_address, status, payment_method, payment_id)
+           VALUES (?, ?, ?, ?, ?, 'Order Placed', ?, ?)`,
           [
             grandTotal,
             customer?.name || "Shopper",
             customer?.phone || customer?.mobile || "",
             customer?.email || "",
-            deliveryAddress || customer?.address || "Express Home Delivery"
+            deliveryAddress || customer?.address || "Express Home Delivery",
+            chosenMethod,
+            chosenId
           ],
           function (err) {
             if (err) return reject(err)
@@ -120,12 +132,24 @@ export async function POST(req: Request) {
       db.close()
       
       const billNo = `INV-${saleId.toString().padStart(5, '0')}`
+      const orderId = `ORD-${new Date().getFullYear()}-${saleId.toString().padStart(4, '0')}`
       result.receipt.bill_no = billNo
-      result.receipt.order_id = `ORD-${new Date().getFullYear()}-${saleId.toString().padStart(4, '0')}`
+      result.receipt.order_id = orderId
+      result.receipt.status = 'Order Placed'
+      result.receipt.payment_method = chosenMethod
+      result.receipt.payment_id = chosenId
       if (customer) result.receipt.customer = customer
       if (bags) result.receipt.bags = bags
 
-      return NextResponse.json({ ...result, billNo, saleId })
+      return NextResponse.json({
+        ...result,
+        billNo,
+        orderId,
+        saleId,
+        status: 'Order Placed',
+        paymentMethod: chosenMethod,
+        paymentId: chosenId
+      })
     } else {
       return NextResponse.json({ error: "Checkout calculation failed" }, { status: 500 })
     }

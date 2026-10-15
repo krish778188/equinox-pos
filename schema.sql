@@ -32,8 +32,10 @@ CREATE TABLE IF NOT EXISTS Sales (
     customer_name VARCHAR(255),
     customer_phone VARCHAR(50),
     customer_email VARCHAR(255),
-    status VARCHAR(50) DEFAULT 'Delivered',
+    status VARCHAR(50) DEFAULT 'Order Placed',
     delivery_address TEXT,
+    payment_method VARCHAR(100) DEFAULT 'UPI (krishraj453@okicici)',
+    payment_id VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

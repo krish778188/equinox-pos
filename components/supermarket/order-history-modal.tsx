@@ -141,6 +141,9 @@ export function OrderHistoryModal({
             <div class="meta">
               Order No: <strong>${order.orderId || order.billNo}</strong><br/>
               Invoice No: <strong>${order.billNo}</strong><br/>
+              Status: <strong>${order.status || 'Order Placed'}</strong><br/>
+              Payment Method: <strong>${order.payment_method || 'UPI (krishraj453@okicici)'}</strong><br/>
+              Payment ID: <strong>${order.payment_id || 'N/A'}</strong><br/>
               Date: ${new Date(order.created_at).toLocaleString('en-IN')}<br/>
               Customer: ${order.customer_name || user?.name || "Shopper"}<br/>
               Delivery Address: ${order.delivery_address || "Home Delivery"}
@@ -259,7 +262,9 @@ export function OrderHistoryModal({
                           ? "bg-amber-100 text-amber-800"
                           : selectedOrder.status === "Return Rejected" || selectedOrder.return_status === "Rejected"
                             ? "bg-rose-100 text-rose-800"
-                            : "bg-emerald-100 text-emerald-800"
+                            : selectedOrder.status === "Order Placed"
+                              ? "bg-blue-100 text-blue-800 ring-1 ring-blue-300"
+                              : "bg-emerald-100 text-emerald-800"
                     }`}>
                       {selectedOrder.status === "Refunded" || selectedOrder.return_status === "Approved"
                         ? "Return Accepted & Refunded"
@@ -267,17 +272,19 @@ export function OrderHistoryModal({
                           ? "Pending for Approval"
                           : selectedOrder.status === "Return Rejected" || selectedOrder.return_status === "Rejected"
                             ? "Return Rejected"
-                            : (selectedOrder.status || "Delivered")}
+                            : (selectedOrder.status || "Order Placed")}
                     </span>
                   </div>
                   <div className="mt-2 text-xs text-stone-600 flex items-center gap-1.5">
                     <Calendar className="h-3.5 w-3.5 text-stone-400" />
-                    <span>Return Policy: <strong>7 days from billing date</strong></span>
+                    <span>Return Policy: <strong>7 days from delivery date</strong></span>
                   </div>
                   <div className="text-xs text-stone-600 flex items-center gap-1.5 mt-0.5">
                     <Clock className="h-3.5 w-3.5 text-stone-400" />
                     <span>
-                      {selectedOrder.isReturnEligible ? (
+                      {selectedOrder.status === "Order Placed" ? (
+                        <strong className="text-blue-800">Order placed and being packed. Return window starts once marked Delivered.</strong>
+                      ) : selectedOrder.isReturnEligible ? (
                         <>Eligible for return until: <strong className="text-emerald-800">{selectedOrder.lastReturnDate}</strong> ({selectedOrder.daysRemaining} days left)</>
                       ) : selectedOrder.status === "Refunded" || selectedOrder.return_status === "Approved" ? (
                         <strong className="text-purple-800">Refund completed for this order</strong>
@@ -336,13 +343,21 @@ export function OrderHistoryModal({
                 </div>
               )}
 
+              {selectedOrder.status === "Order Placed" && (
+                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 flex items-center gap-2">
+                  <Package className="h-4 w-4 text-blue-600 shrink-0" />
+                  <span>Your order has been <strong>Placed and is being processed</strong>. Once delivered by admin, you can initiate a return or exchange within 7 days.</span>
+                </div>
+              )}
+
               {!selectedOrder.isReturnEligible && 
                 selectedOrder.status !== "Refunded" && 
                 selectedOrder.return_status !== "Approved" && 
                 selectedOrder.status !== "Return Requested" && 
                 selectedOrder.return_status !== "Pending" && 
                 selectedOrder.status !== "Return Rejected" && 
-                selectedOrder.return_status !== "Rejected" && (
+                selectedOrder.return_status !== "Rejected" &&
+                selectedOrder.status !== "Order Placed" && (
                 <div className="rounded-2xl border border-stone-200 bg-stone-50 p-3 text-xs text-stone-500 flex items-center gap-2">
                   <Clock className="h-4 w-4 text-stone-400 shrink-0" />
                   <span>The 7-day return window for this order has expired. Orders can only be returned within 7 days of delivery.</span>
@@ -464,6 +479,18 @@ export function OrderHistoryModal({
                   <span className="font-semibold text-stone-800">{selectedOrder.billNo}</span>
                 </div>
                 <div className="flex justify-between py-1 text-stone-500">
+                  <span>Payment Method</span>
+                  <span className="font-semibold text-stone-800">{selectedOrder.payment_method || "UPI (krishraj453@okicici)"}</span>
+                </div>
+                {selectedOrder.payment_id && (
+                  <div className="flex justify-between py-1 text-stone-500">
+                    <span>Payment / UTR Ref ID</span>
+                    <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      {selectedOrder.payment_id}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between py-1 text-stone-500">
                   <span>Delivery Address</span>
                   <span className="font-medium text-stone-800 text-right max-w-xs">{selectedOrder.delivery_address || "Home Address"}</span>
                 </div>
@@ -526,7 +553,9 @@ export function OrderHistoryModal({
                                 ? "bg-amber-100 text-amber-800"
                                 : isRejected
                                   ? "bg-rose-100 text-rose-800"
-                                  : "bg-emerald-100 text-emerald-800"
+                                  : order.status === "Order Placed"
+                                    ? "bg-blue-100 text-blue-800 ring-1 ring-blue-300"
+                                    : "bg-emerald-100 text-emerald-800"
                           }`}>
                             {isRefunded
                               ? "Accepted"
@@ -534,11 +563,16 @@ export function OrderHistoryModal({
                                 ? "Pending for Approval"
                                 : isRejected
                                   ? "Rejected"
-                                  : (order.status || "Delivered")}
+                                  : (order.status || "Order Placed")}
                           </span>
                         </div>
-                        <p className="text-[11px] text-stone-400 mt-0.5">
-                          {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {order.items?.length || 1} items
+                        <p className="text-[11px] text-stone-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                          <span>{new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {order.items?.length || 1} items</span>
+                          {order.payment_id && (
+                            <span className="font-mono text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/80">
+                              Ref: {order.payment_id}
+                            </span>
+                          )}
                         </p>
                         
                         {/* 7-Day Return Eligibility Status */}
@@ -554,6 +588,10 @@ export function OrderHistoryModal({
                           ) : isRejected ? (
                             <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200/60">
                               Return Rejected by Admin
+                            </span>
+                          ) : order.status === "Order Placed" ? (
+                            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
+                              Order Placed · Awaiting Dispatch
                             </span>
                           ) : isEligible ? (
                             <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/60">

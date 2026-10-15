@@ -11,7 +11,7 @@ export async function GET(req: Request) {
 
     let query = `
       SELECT 
-        s.id, s.total_amount, s.customer_name, s.customer_phone, s.customer_email, s.delivery_address, s.status, s.created_at,
+        s.id, s.total_amount, s.customer_name, s.customer_phone, s.customer_email, s.delivery_address, s.status, s.payment_method, s.payment_id, s.created_at,
         rr.status as return_status, rr.reason as return_reason, rr.reviewed_at as return_reviewed_at
       FROM Sales s
       LEFT JOIN ReturnRequests rr ON rr.sale_id = s.id
@@ -73,12 +73,11 @@ export async function GET(req: Request) {
                 const returnDeadline = new Date(saleDate.getTime() + 7 * 24 * 60 * 60 * 1000)
                 const now = new Date()
                 const daysRemaining = Math.max(0, Math.ceil((returnDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+                // Customer can only return if the order has been delivered by admin!
                 const isReturnEligible = daysRemaining > 0 && 
-                  sale.status !== 'Refunded' && 
-                  sale.status !== 'Return Requested' && 
-                  sale.status !== 'Return Rejected' &&
-                  sale.return_status !== 'Approved' &&
-                  sale.return_status !== 'Pending' &&
+                  sale.status === 'Delivered' && 
+                  sale.return_status !== 'Approved' && 
+                  sale.return_status !== 'Pending' && 
                   sale.return_status !== 'Rejected'
 
                 resolve({
@@ -105,5 +104,30 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error("Sales fetch error:", error)
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json()
+    const { id, status } = body
+
+    if (!id || !status) {
+      return NextResponse.json({ error: "Missing id or status" }, { status: 400 })
+    }
+
+    const db = getDb()
+    await new Promise<void>((resolve, reject) => {
+      db.run("UPDATE Sales SET status = ? WHERE id = ?", [status, id], function (err) {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+
+    db.close()
+    return NextResponse.json({ success: true, id, status })
+  } catch (error) {
+    console.error("Error updating sale status:", error)
+    return NextResponse.json({ error: "Failed to update sale status" }, { status: 500 })
   }
 }

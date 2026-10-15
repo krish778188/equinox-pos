@@ -323,6 +323,26 @@ export function AdminPortal({
     }
   }
 
+  const handleMarkDelivered = async (saleId: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    try {
+      const res = await fetch("/api/sales", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: saleId, status: "Delivered" })
+      })
+      if (!res.ok) throw new Error("Failed to update status")
+
+      setSalesList(prev => prev.map(s => s.id === saleId ? { ...s, status: "Delivered" } : s))
+      if (selectedBill && selectedBill.id === saleId) {
+        setSelectedBill(prev => prev ? { ...prev, status: "Delivered" } : null)
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Error updating order status. Please try again.")
+    }
+  }
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsAddingProduct(true)
@@ -1153,16 +1173,17 @@ export function AdminPortal({
 
               <div className={`${cardBase} p-6 overflow-hidden`}>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs min-w-[780px]">
+                  <table className="w-full text-left text-xs min-w-[850px]">
                     <thead>
                       <tr className="border-b border-stone-200 text-[11px] uppercase tracking-wider font-bold text-stone-400 bg-stone-50/70">
-                        <th className="w-[140px] px-3.5 py-3 text-left">Bill No</th>
-                        <th className="w-[180px] px-3.5 py-3 text-left">Date</th>
-                        <th className="min-w-[170px] px-3.5 py-3 text-left">Customer</th>
-                        <th className="w-[90px] px-3.5 py-3 text-center">Items</th>
-                        <th className="w-[130px] px-3.5 py-3 text-right">Total Amount</th>
-                        <th className="w-[130px] px-3.5 py-3 text-center">Status</th>
-                        <th className="w-[110px] px-3.5 py-3 text-right">Inspection</th>
+                        <th className="w-[130px] px-3.5 py-3 text-left">Bill No</th>
+                        <th className="w-[160px] px-3.5 py-3 text-left">Date</th>
+                        <th className="min-w-[150px] px-3.5 py-3 text-left">Customer</th>
+                        <th className="w-[80px] px-3.5 py-3 text-center">Items</th>
+                        <th className="w-[120px] px-3.5 py-3 text-right">Total Amount</th>
+                        <th className="w-[170px] px-3.5 py-3 text-left">Payment / Ref ID</th>
+                        <th className="w-[140px] px-3.5 py-3 text-center">Status</th>
+                        <th className="w-[90px] px-3.5 py-3 text-right">Inspection</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100">
@@ -1170,7 +1191,8 @@ export function AdminPortal({
                         .filter(s => 
                           !billSearch || 
                           (s.billNo && s.billNo.toLowerCase().includes(billSearch.toLowerCase())) ||
-                          (s.customer_name && s.customer_name.toLowerCase().includes(billSearch.toLowerCase()))
+                          (s.customer_name && s.customer_name.toLowerCase().includes(billSearch.toLowerCase())) ||
+                          (s.payment_id && s.payment_id.toLowerCase().includes(billSearch.toLowerCase()))
                         )
                         .map((sale) => (
                           <tr
@@ -1200,18 +1222,41 @@ export function AdminPortal({
                             <td className="px-3.5 py-3 align-middle text-right font-mono font-bold text-stone-900 tabular-nums whitespace-nowrap">
                               {formatCurrency(sale.total_amount)}
                             </td>
+                            <td className="px-3.5 py-3 align-middle">
+                              <div className="flex flex-col justify-center min-h-[34px]">
+                                <span className="font-semibold text-stone-800 leading-tight truncate">
+                                  {sale.payment_method?.replace(" (krishraj453@okicici)", "") || "UPI"}
+                                </span>
+                                <span className="font-mono text-[10px] text-emerald-800 font-bold mt-0.5 leading-tight truncate">
+                                  {sale.payment_id || "N/A"}
+                                </span>
+                              </div>
+                            </td>
                             <td className="px-3.5 py-3 align-middle text-center whitespace-nowrap">
-                              <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                                sale.status === "Refunded"
-                                  ? "bg-purple-100 text-purple-800"
-                                  : sale.status === "Return Requested"
-                                    ? "bg-amber-100 text-amber-800"
-                                    : sale.status === "Return Rejected"
-                                      ? "bg-rose-100 text-rose-800"
-                                      : "bg-emerald-100 text-emerald-800"
-                              }`}>
-                                {sale.status || "Delivered"}
-                              </span>
+                              <div className="flex flex-col items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                                <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                                  sale.status === "Refunded"
+                                    ? "bg-purple-100 text-purple-800"
+                                    : sale.status === "Return Requested"
+                                      ? "bg-amber-100 text-amber-800"
+                                      : sale.status === "Return Rejected"
+                                        ? "bg-rose-100 text-rose-800"
+                                        : sale.status === "Order Placed"
+                                          ? "bg-blue-100 text-blue-800 ring-1 ring-blue-300"
+                                          : "bg-emerald-100 text-emerald-800"
+                                }`}>
+                                  {sale.status || "Order Placed"}
+                                </span>
+                                {sale.status === "Order Placed" && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleMarkDelivered(sale.id, e)}
+                                    className="rounded-lg bg-emerald-700 px-2.5 py-1 text-[10px] font-bold text-white shadow-xs hover:bg-emerald-800 active:scale-95 transition flex items-center gap-1"
+                                  >
+                                    🚚 Mark Delivered
+                                  </button>
+                                )}
+                              </div>
                             </td>
                             <td className="px-3.5 py-3 align-middle text-right whitespace-nowrap">
                               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 group-hover:text-emerald-800 group-hover:underline">
@@ -1222,7 +1267,7 @@ export function AdminPortal({
                         ))}
                       {salesList.length === 0 && (
                         <tr>
-                          <td colSpan={7} className="px-4 py-8 text-center text-stone-400">
+                          <td colSpan={8} className="px-4 py-8 text-center text-stone-400">
                             No supermarket orders found.
                           </td>
                         </tr>
@@ -1247,9 +1292,13 @@ export function AdminPortal({
                 <div className="flex items-center gap-2">
                   <h2 className="font-serif text-xl font-bold text-stone-900">{selectedBill.billNo}</h2>
                   <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${
-                    selectedBill.status === "Refunded" ? "bg-purple-100 text-purple-800" : "bg-emerald-100 text-emerald-800"
+                    selectedBill.status === "Refunded"
+                      ? "bg-purple-100 text-purple-800"
+                      : selectedBill.status === "Order Placed"
+                        ? "bg-blue-100 text-blue-800 ring-1 ring-blue-300"
+                        : "bg-emerald-100 text-emerald-800"
                   }`}>
-                    {selectedBill.status || "Delivered"}
+                    {selectedBill.status || "Order Placed"}
                   </span>
                 </div>
                 <p className="text-xs text-stone-400 mt-0.5">
@@ -1264,17 +1313,32 @@ export function AdminPortal({
               </button>
             </div>
 
-            {/* Customer Details */}
-            <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 text-xs">
-              <p className="font-bold text-stone-900 mb-1">Customer &amp; Shipping Details</p>
-              <p className="text-stone-700 font-medium">{selectedBill.customer_name || "Customer"}</p>
-              {selectedBill.customer_phone && <p className="text-stone-500">Phone: {selectedBill.customer_phone}</p>}
-              {selectedBill.delivery_address && (
-                <p className="text-stone-500 mt-1 flex items-start gap-1">
-                  <MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0 mt-0.5" />
-                  <span>{selectedBill.delivery_address}</span>
-                </p>
-              )}
+            {/* Customer & Payment Details */}
+            <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 text-xs space-y-2">
+              <div>
+                <p className="font-bold text-stone-900 mb-0.5">Customer &amp; Shipping Details</p>
+                <p className="text-stone-700 font-medium">{selectedBill.customer_name || "Customer"}</p>
+                {selectedBill.customer_phone && <p className="text-stone-500">Phone: {selectedBill.customer_phone}</p>}
+                {selectedBill.delivery_address && (
+                  <p className="text-stone-500 mt-1 flex items-start gap-1">
+                    <MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0 mt-0.5" />
+                    <span>{selectedBill.delivery_address}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-stone-200/60 grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-stone-400 block font-semibold text-[10px] uppercase">Payment Method</span>
+                  <span className="font-bold text-stone-800">{selectedBill.payment_method || "UPI (krishraj453@okicici)"}</span>
+                </div>
+                <div>
+                  <span className="text-stone-400 block font-semibold text-[10px] uppercase">Payment / Ref ID</span>
+                  <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block">
+                    {selectedBill.payment_id || "N/A"}
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Line Items Table */}
@@ -1319,11 +1383,21 @@ export function AdminPortal({
                 <Printer className="h-4 w-4" /> Print Invoice Bill
               </button>
 
+              {selectedBill.status === "Order Placed" && (
+                <button
+                  type="button"
+                  onClick={() => handleMarkDelivered(selectedBill.id)}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-4 py-3 text-xs font-bold text-white hover:bg-emerald-800 shadow-sm active:scale-[0.98]"
+                >
+                  🚚 Mark as Delivered
+                </button>
+              )}
+
               {selectedBill.status === "Refunded" ? (
                 <div className="flex-1 flex items-center justify-center rounded-2xl bg-purple-50 border border-purple-200 text-purple-700 text-xs font-bold py-3">
                   ✓ Order Already Refunded
                 </div>
-              ) : (
+              ) : selectedBill.status !== "Order Placed" ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -1345,7 +1419,7 @@ export function AdminPortal({
                 >
                   <RotateCcw className="h-4 w-4" /> Initiate Admin Refund
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
