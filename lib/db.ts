@@ -28,10 +28,10 @@ export function getDb(): sqlite3.Database {
       if (err || !row || row.count < 30) {
         console.log("Database uninitialized or empty. Auto-seeding catalog & sample orders at", dbPath)
         try {
-          const initModule = require("../init-db.js")
+          const initModule = eval("require")("../init-db.js")
           initModule.initDb(dbPath).catch((e: any) => console.error("Auto-init error:", e))
         } catch (e) {
-          console.error("Auto-init require error:", e)
+          // Handled by prebuild / container CMD
         }
       } else {
         syncSampleDatesInDb(db).catch(() => {})
