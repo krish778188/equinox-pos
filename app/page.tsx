@@ -7,6 +7,7 @@ import { SupermarketCart, type CartItem } from "@/components/supermarket/superma
 import { AdminPortal } from "@/components/pos/admin-portal"
 import { SupermarketAuth } from "@/components/auth/supermarket-auth"
 import { OrderHistoryModal } from "@/components/supermarket/order-history-modal"
+import { AddressModal } from "@/components/supermarket/address-modal"
 import { type Product, SUPERMARKET_CATEGORIES } from "@/lib/pos-data"
 import { Moon, Sun, MapPin } from "lucide-react"
 
@@ -19,6 +20,7 @@ export default function Page() {
   
   const [loggedInUser, setLoggedInUser] = useState<any>(null)
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false)
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [pendingReturnsCount, setPendingReturnsCount] = useState(0)
 
@@ -27,8 +29,11 @@ export default function Page() {
     if (saved) {
       try {
         const u = JSON.parse(saved)
-        // Ensure default demo user address is updated to IIIT Nagpur
-        if (u && (u.email === "user@equinox.com" || u.role !== "Admin") && (!u.address || u.address.includes("Bellandur") || u.address.includes("Bengaluru"))) {
+        // Ensure default demo user address is updated to IIIT Nagpur, or migrate old Bellandur string
+        if (u && u.email === "user@equinox.com" && (!u.address || u.address.includes("Bellandur") || u.address.includes("Bengaluru"))) {
+          u.address = "IIIT Nagpur, waranga, Nagpur-441108"
+          localStorage.setItem("supermarket_user", JSON.stringify(u))
+        } else if (u && u.address && (u.address.includes("Bellandur") || u.address.includes("Bengaluru"))) {
           u.address = "IIIT Nagpur, waranga, Nagpur-441108"
           localStorage.setItem("supermarket_user", JSON.stringify(u))
         }
@@ -36,6 +41,28 @@ export default function Page() {
       } catch (e) {}
     }
   }, [])
+
+  const handleUpdateAddress = async (newAddress: string) => {
+    if (!loggedInUser) return
+
+    try {
+      const res = await fetch("/api/user/address", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loggedInUser.email, address: newAddress })
+      })
+      const data = await res.json()
+      if (!data.success) {
+        throw new Error(data.error || "Failed to update address in database")
+      }
+    } catch (e) {
+      console.warn("Could not save address to server, saving locally:", e)
+    }
+
+    const updated = { ...loggedInUser, address: newAddress }
+    setLoggedInUser(updated)
+    localStorage.setItem("supermarket_user", JSON.stringify(updated))
+  }
 
   const handleLoginSuccess = (user: any) => {
     localStorage.setItem("supermarket_user", JSON.stringify(user))
@@ -227,6 +254,7 @@ export default function Page() {
         pendingReturnsCount={pendingReturnsCount}
         onOpenOrderHistory={() => setIsOrderHistoryOpen(true)}
         onLogout={handleLogout}
+        onChangeAddress={() => setIsAddressModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -257,16 +285,31 @@ export default function Page() {
                 <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
                 <span>Admin Console Live</span>
               </div>
-            ) : (
-              <div 
-                className="hidden sm:flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3.5 py-1.5 text-xs font-semibold text-emerald-850 shadow-xs backdrop-blur-xl"
-                title={loggedInUser?.address || "IIIT Nagpur, waranga, Nagpur-441108"}
+            ) : loggedInUser?.address ? (
+              <button
+                type="button"
+                onClick={() => setIsAddressModalOpen(true)}
+                className="hidden sm:flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/80 hover:bg-emerald-100/90 px-3.5 py-1.5 text-xs font-semibold text-emerald-900 shadow-xs backdrop-blur-xl transition group cursor-pointer"
+                title="Click to change delivery address"
               >
                 <MapPin className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
-                <span className="truncate max-w-[260px]">
-                  Delivering to: <strong className="text-emerald-950 font-bold">{loggedInUser?.address || "IIIT Nagpur, waranga, Nagpur-441108"}</strong>
+                <span className="truncate max-w-[240px]">
+                  Delivering to: <strong className="text-emerald-950 font-bold">{loggedInUser.address}</strong>
                 </span>
-              </div>
+                <span className="text-[10px] font-bold text-emerald-800 bg-white/90 px-1.5 py-0.5 rounded-md border border-emerald-200 ml-1 group-hover:bg-emerald-700 group-hover:text-white transition shadow-2xs">
+                  Change
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsAddressModalOpen(true)}
+                className="hidden sm:flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3.5 py-1.5 text-xs font-bold text-amber-900 shadow-xs backdrop-blur-xl transition cursor-pointer"
+                title="Click to add delivery address"
+              >
+                <MapPin className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                <span>+ Add Delivery Address</span>
+              </button>
             )}
 
             <div className="text-xs font-semibold text-stone-700 hidden md:block">
@@ -310,6 +353,7 @@ export default function Page() {
               onClear={() => setCart([])}
               user={loggedInUser}
               onUpdateUser={setLoggedInUser}
+              onChangeAddress={() => setIsAddressModalOpen(true)}
             />
           </div>
         ) : (
@@ -329,6 +373,14 @@ export default function Page() {
         isOpen={isOrderHistoryOpen}
         onClose={() => setIsOrderHistoryOpen(false)}
         user={loggedInUser}
+      />
+
+      {/* Change / Add Delivery Address Modal */}
+      <AddressModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        currentAddress={loggedInUser?.address || ""}
+        onSave={handleUpdateAddress}
       />
     </div>
   )

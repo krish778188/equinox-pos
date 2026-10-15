@@ -35,7 +35,7 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
   const [formData, setFormData] = useState({
     name: user?.name || "",
     phone: user?.mobile || user?.phone || "",
-    address: user?.address || "IIIT Nagpur, waranga, Nagpur-441108",
+    address: user?.address || (user?.email === "user@equinox.com" ? "IIIT Nagpur, waranga, Nagpur-441108" : ""),
     carryBags: 0,
   })
 
@@ -52,7 +52,7 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
         ...prev,
         name: prev.name || user.name || "",
         phone: prev.phone || user.mobile || user.phone || "",
-        address: prev.address || user.address || "IIIT Nagpur, waranga, Nagpur-441108",
+        address: prev.address || user.address || (user.email === "user@equinox.com" ? "IIIT Nagpur, waranga, Nagpur-441108" : ""),
       }))
     }
   }, [user, isOpen])
@@ -117,6 +117,11 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
         const updated = { ...user, address: formData.address, mobile: formData.phone, name: formData.name }
         localStorage.setItem("supermarket_user", JSON.stringify(updated))
         onUpdateUser?.(updated)
+        fetch("/api/user/address", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: user.email, address: formData.address })
+        }).catch(() => {})
       }
 
       // Generate System Payment ID & capture user-entered UPI reference

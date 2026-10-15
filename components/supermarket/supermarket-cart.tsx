@@ -23,6 +23,7 @@ export function SupermarketCart({
   onClear: () => void
   user: any
   onUpdateUser?: (updated: any) => void
+  onChangeAddress?: () => void
 }) {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
 
@@ -64,15 +65,45 @@ export function SupermarketCart({
         </div>
 
         {/* Delivering To Pill */}
-        <div className="mx-4 mt-3 flex items-center gap-2 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 px-3 py-2 text-[11px] text-emerald-900 shadow-xs">
-          <MapPin className="h-4 w-4 text-emerald-700 shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="font-bold text-[10px] uppercase tracking-wider text-emerald-700">Delivering To</p>
-            <p className="truncate font-semibold text-emerald-950" title={user?.address || "IIIT Nagpur, waranga, Nagpur-441108"}>
-              {user?.address || "IIIT Nagpur, waranga, Nagpur-441108"}
-            </p>
+        {user?.address ? (
+          <div className="mx-4 mt-3 flex items-center justify-between rounded-2xl bg-emerald-50/80 border border-emerald-200/80 px-3 py-2 text-[11px] text-emerald-900 shadow-xs">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <MapPin className="h-4 w-4 text-emerald-700 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-[10px] uppercase tracking-wider text-emerald-700">Delivering To</p>
+                <p className="truncate font-semibold text-emerald-950" title={user.address}>
+                  {user.address}
+                </p>
+              </div>
+            </div>
+            {onChangeAddress && (
+              <button
+                type="button"
+                onClick={onChangeAddress}
+                className="ml-2 rounded-xl bg-white/90 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-800 hover:bg-emerald-700 hover:text-white transition shrink-0 cursor-pointer shadow-2xs"
+              >
+                Change
+              </button>
+            )}
           </div>
-        </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onChangeAddress}
+            className="mx-4 mt-3 flex items-center justify-between rounded-2xl bg-amber-50/90 border border-amber-200/90 px-3 py-2 text-[11px] text-amber-950 hover:bg-amber-100/90 transition shadow-xs text-left cursor-pointer group"
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <MapPin className="h-4 w-4 text-amber-700 shrink-0" />
+              <div className="min-w-0">
+                <p className="font-bold text-[10px] uppercase tracking-wider text-amber-700">Delivering To</p>
+                <p className="font-semibold text-amber-900">No address added</p>
+              </div>
+            </div>
+            <span className="ml-2 rounded-xl bg-white border border-amber-200 px-2.5 py-1 text-[10px] font-bold text-amber-800 group-hover:bg-amber-700 group-hover:text-white transition shrink-0 shadow-2xs">
+              + Add Address
+            </span>
+          </button>
+        )}
 
         {/* Items List */}
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-24">
