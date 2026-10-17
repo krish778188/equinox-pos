@@ -173,9 +173,6 @@ export function SupermarketAuth({ onSuccess }: { onSuccess: (user: any) => void 
               <div><span className="font-medium text-stone-400">Email:</span> user@equinox.com</div>
               <div><span className="font-medium text-stone-400">Pass:</span> user123</div>
             </div>
-            <div className="mt-1.5 pt-1.5 border-t border-emerald-200/50 text-[11px] text-stone-600 truncate" title="IIIT Nagpur, waranga, Nagpur-441108">
-              <span className="font-medium text-stone-400">Address:</span> IIIT Nagpur, waranga, Nagpur-441108
-            </div>
           </div>
         )}
 
