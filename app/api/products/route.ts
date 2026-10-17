@@ -2,6 +2,9 @@ import { NextResponse } from "next/server"
 import { getDb, getDbPath } from "@/lib/db"
 import { getDynamicExpiryDate } from "@/lib/date-utils"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 export async function GET() {
   try {
     const db = getDb()
@@ -32,7 +35,16 @@ export async function GET() {
       ...p,
       expiry_date: getDynamicExpiryDate(p.expiry_date)
     }))
-    return NextResponse.json({ products: dynamicProducts })
+    return NextResponse.json(
+      { products: dynamicProducts },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        }
+      }
+    )
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 })
   }

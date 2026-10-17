@@ -93,6 +93,27 @@ export default function Page() {
     setCart([])
   }
 
+  const refreshProducts = () => {
+    fetch(`/api/products?t=${Date.now()}`, { cache: "no-store" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.products && Array.isArray(data.products) && data.products.length > 0) {
+          setProducts(data.products)
+        }
+      })
+      .catch(err => console.warn("Could not fetch products:", err))
+  }
+
+  useEffect(() => {
+    refreshProducts()
+    const interval = setInterval(refreshProducts, 3000)
+    window.addEventListener("focus", refreshProducts)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener("focus", refreshProducts)
+    }
+  }, [])
+
   useEffect(() => {
     if (loggedInUser) {
       const isAdmin = loggedInUser.role === "Admin" || loggedInUser.role === "Store Manager"
@@ -101,17 +122,10 @@ export default function Page() {
       } else if (isAdmin && active === "shop") {
         setActive("settings")
       }
-      
-      const refreshData = () => {
-        fetch("/api/products")
-          .then(res => res.json())
-          .then(data => {
-            if (data.products) setProducts(data.products)
-          })
-          .catch(err => console.warn("Could not fetch products:", err))
 
-        if (isAdmin) {
-          fetch("/api/returns")
+      if (isAdmin) {
+        const fetchReturns = () => {
+          fetch(`/api/returns?t=${Date.now()}`, { cache: "no-store" })
             .then(res => res.json())
             .then(data => {
               if (data.success && data.requests) {
@@ -121,16 +135,9 @@ export default function Page() {
             })
             .catch(console.error)
         }
-      }
-
-      refreshData()
-
-      const interval = setInterval(refreshData, 4000)
-      window.addEventListener("focus", refreshData)
-
-      return () => {
-        clearInterval(interval)
-        window.removeEventListener("focus", refreshData)
+        fetchReturns()
+        const retInterval = setInterval(fetchReturns, 5000)
+        return () => clearInterval(retInterval)
       }
     }
   }, [loggedInUser])
