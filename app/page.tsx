@@ -296,7 +296,7 @@ export default function Page() {
             )}
 
             <div className="text-xs font-semibold text-stone-700 hidden md:block">
-              Hi, <span className="text-stone-900">{loggedInUser.name.split(" ")[0]}</span>
+              Hi, <span className="text-stone-900">{(loggedInUser?.name || "Shopper").split(" ")[0]}</span>
             </div>
 
             <button
