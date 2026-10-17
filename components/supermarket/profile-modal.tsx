@@ -152,9 +152,9 @@ export function ProfileModal({
           <div className="flex flex-col gap-3">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-400">Personal Details</p>
 
-            {/* Email (Read only) */}
+            {/* Email */}
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-stone-600">Email Address (Read-only)</span>
+              <span className="text-xs font-medium text-stone-600">Email Address</span>
               <input
                 type="email"
                 value={user.email}
