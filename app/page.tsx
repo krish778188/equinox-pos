@@ -29,11 +29,11 @@ export default function Page() {
     if (saved) {
       try {
         const u = JSON.parse(saved)
-        // Ensure default demo user address is updated to IIIT Nagpur, or migrate old Bellandur string
-        if (u && u.email === "user@equinox.com" && (!u.address || u.address.includes("Bellandur") || u.address.includes("Bengaluru"))) {
+        const addr = typeof u?.address === "string" ? u.address : ""
+        if (u && u.email === "user@equinox.com" && (!addr || addr.includes("Bellandur") || addr.includes("Bengaluru"))) {
           u.address = "IIIT Nagpur, waranga, Nagpur-441108"
           localStorage.setItem("supermarket_user", JSON.stringify(u))
-        } else if (u && u.address && (u.address.includes("Bellandur") || u.address.includes("Bengaluru"))) {
+        } else if (u && addr && (addr.includes("Bellandur") || addr.includes("Bengaluru"))) {
           u.address = "IIIT Nagpur, waranga, Nagpur-441108"
           localStorage.setItem("supermarket_user", JSON.stringify(u))
         }
