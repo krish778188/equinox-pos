@@ -44,6 +44,7 @@ async function initDb(customDbPath = null) {
   `);
   await runAsync(`UPDATE Users SET address = 'IIIT Nagpur, waranga, Nagpur-441108' WHERE email = 'user@equinox.com'`).catch(() => {});
   await runAsync(`UPDATE Sales SET delivery_address = 'IIIT Nagpur, waranga, Nagpur-441108' WHERE customer_email = 'user@equinox.com'`).catch(() => {});
+  await runAsync(`UPDATE Products SET category = 'Vegetables and Fruits' WHERE category = 'Vegetables'`).catch(() => {});
 
   // Ensure admin user exists
   await runAsync(`

@@ -7,7 +7,10 @@ import { ProductDetailModal } from "./product-detail-modal"
 
 function getCategoryIcon(category: string) {
   switch (category) {
-    case "Vegetables": return "🥦"
+    case "Vegetables":
+    case "Vegetables and Fruits":
+    case "Vegetables & Fruits":
+    case "Vegetable and Fruits": return "🥦🍎"
     case "Grocery": return "🌾"
     case "Snacks and Drinks": return "🥤"
     case "Beauty and Personal Care": return "✨"

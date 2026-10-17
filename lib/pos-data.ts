@@ -15,7 +15,7 @@ export type Product = {
 
 export const SUPERMARKET_CATEGORIES = [
   "All Products",
-  "Vegetables",
+  "Vegetables and Fruits",
   "Grocery",
   "Snacks and Drinks",
   "Beauty and Personal Care",

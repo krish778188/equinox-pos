@@ -149,7 +149,8 @@ export default function Page() {
       const cat = (p.category || "").toLowerCase()
       const matchesCategory =
         selectedCategory === "All Products" ||
-        cat === selectedCategory.toLowerCase()
+        cat === selectedCategory.toLowerCase() ||
+        (selectedCategory.toLowerCase().includes("vegetable") && cat.includes("vegetable"))
 
       const matchesSearch =
         !q ||

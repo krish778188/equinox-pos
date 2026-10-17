@@ -492,7 +492,7 @@
   {
     "id": "sku-veg-01",
     "name": "Fresh Farm Red Onions (1kg)",
-    "category": "Vegetables",
+    "category": "Vegetables and Fruits",
     "price": 40,
     "stock": 85,
     "brand": "FarmFresh",
@@ -506,7 +506,7 @@
   {
     "id": "sku-veg-02",
     "name": "Hybrid Red Tomatoes (1kg)",
-    "category": "Vegetables",
+    "category": "Vegetables and Fruits",
     "price": 45,
     "stock": 60,
     "brand": "Nature's Best",
@@ -520,7 +520,7 @@
   {
     "id": "sku-veg-03",
     "name": "Farm Fresh Potatoes (1kg)",
-    "category": "Vegetables",
+    "category": "Vegetables and Fruits",
     "price": 35,
     "stock": 90,
     "brand": "Pahadi Harvest",
@@ -534,7 +534,7 @@
   {
     "id": "sku-veg-04",
     "name": "Robusta Cavendish Bananas (1 Dozen)",
-    "category": "Vegetables",
+    "category": "Vegetables and Fruits",
     "price": 60,
     "stock": 45,
     "brand": "Fresh Fruits",
@@ -548,7 +548,7 @@
   {
     "id": "sku-veg-05",
     "name": "Royal Shimla Crisp Red Apples (4 pcs)",
-    "category": "Vegetables",
+    "category": "Vegetables and Fruits",
     "price": 140,
     "stock": 35,
     "brand": "Himalayan Orchard",
@@ -562,7 +562,7 @@
   {
     "id": "sku-veg-06",
     "name": "Hydroponic Tender Green Spinach (250g)",
-    "category": "Vegetables",
+    "category": "Vegetables and Fruits",
     "price": 30,
     "stock": 50,
     "brand": "HydroGreens",

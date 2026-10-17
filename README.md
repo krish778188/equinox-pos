@@ -10,7 +10,7 @@ Equinox is engineered around a modern grocery supermarket experience divided int
 
 ### 1. 🛍️ Customer Supermarket Storefront (`/`)
 - **Product Catalog**: 36+ everyday supermarket items across 7 departments:
-  - 🍎 **Vegetables & Fruits** *(Tomatoes, Onions, Potatoes, Apples, Bananas, Spinach)*
+  - 🥦🍎 **Vegetables and Fruits** *(Tomatoes, Onions, Potatoes, Apples, Bananas, Spinach)*
   - 🌾 **Grocery & Staples** *(Basmati Rice, Whole Wheat Sourdough Bread, Farm Brown Eggs, Extra Virgin Olive Oil, Sea Salt, Raw Honey)*
   - 🧼 **Household & Cleaning** *(Dettol Surface Cleaner Spray, Clorox Bleach Spray, Lavender Essential Oil, Scented Candle)*
   - 🧴 **Beauty & Personal Care** *(Herbal Soap Bar, Bamboo Shampoo, Bamboo Toothbrush Set, Gentle Face Cleanser, Daily Skincare Hydration Set)*

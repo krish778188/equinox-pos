@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     // Fallback default image based on category if empty
     let finalImageUrl = image_url
     if (!finalImageUrl) {
-      if (category === "Vegetables") finalImageUrl = "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80"
+      if (category === "Vegetables and Fruits" || category === "Vegetables" || (category && category.toLowerCase().includes("vegetable"))) finalImageUrl = "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80"
       else if (category === "Grocery") finalImageUrl = "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&auto=format&fit=crop&q=80"
       else if (category === "Snacks and Drinks") finalImageUrl = "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=600&auto=format&fit=crop&q=80"
       else if (category === "Beauty and Personal Care") finalImageUrl = "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=600&auto=format&fit=crop&q=80"
