@@ -4,6 +4,10 @@ const path = require('path');
 
 async function initDb(customDbPath = null) {
   const dbPath = customDbPath || process.env.DB_PATH || path.resolve(process.cwd(), 'pos.db');
+  const dbDir = path.dirname(dbPath);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
   console.log("Checking database schema & tables in " + dbPath + "...");
 
   const db = new sqlite3.Database(dbPath);

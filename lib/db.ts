@@ -7,7 +7,17 @@ import { syncSampleDatesInDb } from "./date-utils"
 let isInitialized = false
 
 export function getDbPath(): string {
-  if (process.env.DB_PATH) return process.env.DB_PATH
+  if (process.env.DB_PATH) {
+    try {
+      const dir = path.dirname(process.env.DB_PATH)
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true })
+      }
+      return process.env.DB_PATH
+    } catch (e) {
+      console.warn("Could not access custom DB_PATH, falling back to cwd:", e)
+    }
+  }
 
   const cwdDb = path.resolve(process.cwd(), "pos.db")
   if (fs.existsSync(cwdDb)) return cwdDb
