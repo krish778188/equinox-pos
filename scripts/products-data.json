@@ -9,7 +9,7 @@
     "batch_no": "B-BP-401",
     "expiry_date": "25 Apr 2028",
     "description": "Trusted antibacterial soap with signature pine fragrance for 99.9% germ protection.",
-    "image_url": "https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=600&auto=format&fit=crop&q=80",
+    "image_url": "/products/dettol.png",
     "unit": "4 x 100g",
     "mrp": 165
   },
@@ -23,7 +23,7 @@
     "batch_no": "B-BP-402",
     "expiry_date": "14 Jul 2028",
     "description": "Keratin active infusion that deeply penetrates fibers to revitalize and smoothen damaged hair.",
-    "image_url": "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=600&auto=format&fit=crop&q=80",
+    "image_url": "/products/dove.png",
     "unit": "340 ml",
     "mrp": 350
   },
@@ -37,7 +37,7 @@
     "batch_no": "B-BP-403",
     "expiry_date": "19 May 2028",
     "description": "Enriched with cooling crystals that dissolve while brushing, providing 10x longer icy fresh breath.",
-    "image_url": "https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=600&auto=format&fit=crop&q=80",
+    "image_url": "/products/colgate.png",
     "unit": "150 g",
     "mrp": 115
   },
@@ -107,7 +107,7 @@
     "batch_no": "B-ST-203",
     "expiry_date": "10 Nov 2027",
     "description": "Nutritious unpolished yellow arhar lentils, rich in natural protein and essential dietary minerals.",
-    "image_url": "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=600&auto=format&fit=crop&q=80",
+    "image_url": "/products/toor-dal.jpg",
     "unit": "1 kg",
     "mrp": 195
   },
@@ -135,7 +135,7 @@
     "batch_no": "B-ST-205",
     "expiry_date": "30 Dec 2029",
     "description": "Vacuum evaporated pure white salt enriched with the right amount of daily iodine.",
-    "image_url": "https://images.unsplash.com/photo-1518110925495-5fe2fda0442c?w=600&auto=format&fit=crop&q=80",
+    "image_url": "/products/salt.jpg",
     "unit": "1 kg",
     "mrp": 30
   },
@@ -149,7 +149,7 @@
     "batch_no": "B-ST-206",
     "expiry_date": "22 Sep 2028",
     "description": "100% sulphur-free, sparkling white crystal sugar manufactured with hygienic touch-free technology.",
-    "image_url": "https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=600&auto=format&fit=crop&q=80",
+    "image_url": "/products/sugar.jpg",
     "unit": "1 kg",
     "mrp": 55
   },
@@ -163,7 +163,7 @@
     "batch_no": "B-HH-501",
     "expiry_date": "15 Jan 2029",
     "description": "Advanced stain removing power that tackles tough collar and cuff dirt effortlessly in half the water.",
-    "image_url": "https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=600&auto=format&fit=crop&q=80",
+    "image_url": "/products/surf-excel.jpg",
     "unit": "1 kg",
     "mrp": 155
   },
@@ -275,7 +275,7 @@
     "batch_no": "B-OTH-101",
     "expiry_date": "N/A",
     "description": "Ergonomic stainless steel dual-blade swivel peeler for smooth vegetable and fruit peeling.",
-    "image_url": "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=600&auto=format&fit=crop&q=80",
+    "image_url": "/products/peeler.jpg",
     "unit": "1 unit",
     "mrp": 199
   },
@@ -303,7 +303,7 @@
     "batch_no": "B-OTH-103",
     "expiry_date": "N/A",
     "description": "One-touch auto open & close heavy-duty windproof umbrella with reinforced ribs and water-repellent canopy.",
-    "image_url": "https://images.unsplash.com/photo-1534353436294-0dbd4bdac845?w=600&auto=format&fit=crop&q=80",
+    "image_url": "/products/umbrella.jpg",
     "unit": "1 unit",
     "mrp": 499
   },
@@ -317,7 +317,7 @@
     "batch_no": "B-OTH-104",
     "expiry_date": "N/A",
     "description": "Heavy-duty rust-resistant stainless steel household and kitchen shears with comfort-grip handle.",
-    "image_url": "https://images.unsplash.com/photo-1589256469067-ea99122bbdc4?w=600&auto=format&fit=crop&q=80",
+    "image_url": "/products/scissors.jpg",
     "unit": "1 pair",
     "mrp": 220
   },
@@ -345,7 +345,7 @@
     "batch_no": "B-OTH-106",
     "expiry_date": "N/A",
     "description": "Long-lasting 1.5V alkaline AA batteries for clocks, remotes, wireless mice, and electronic toys.",
-    "image_url": "https://images.unsplash.com/photo-1619725002198-6a689b72f41d?w=600&auto=format&fit=crop&q=80",
+    "image_url": "/products/batteries.jpg",
     "unit": "Pack of 4",
     "mrp": 180
   },
