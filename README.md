@@ -1,125 +1,127 @@
-# Equinox Supermarket & Inventory Management System 🛒
+# Equinox Supermarket & E-Commerce Platform 🛒
 
-A modern, full-stack e-commerce supermarket storefront and store administration command center. Built with a high-performance **Next.js** frontend, an **offline-capable SQLite** database, and an **ultra-fast C++ Object-Oriented Programming (OOP) calculation engine** for zero-latency cart, tax, and discount processing.
-
----
-
-## 🛍️ Supermarket Model Overview
-
-Equinox is designed as a unified supermarket retail platform with two tightly integrated experiences:
-
-1. **Customer Supermarket Storefront (`/`)**: A seamless, modern grocery shopping interface with instant search, category filtering, cart drawer, UPI/COD checkout, order history, and a self-service 7-day return request workflow.
-2. **Store Admin Command Center**: A management portal for real-time inventory monitoring, order status progression, return request approvals with automated refund coupon issuance, and promotional discount campaigns.
+A modern, full-stack supermarket e-commerce web application and retail inventory management system. Built with **Next.js (React)**, **Tailwind CSS**, an **offline-capable SQLite** database, and a high-performance **C++ Object-Oriented Programming (OOP) calculation engine** for zero-latency checkout processing.
 
 ---
 
-## 🏗️ Architecture & C++ OOP Backend Engine
+## 🏬 The Supermarket Model
 
-The heavy mathematical cart computations are powered by a native **C++ Object-Oriented Programming (OOP) engine**:
+Equinox is engineered around a modern grocery supermarket experience divided into two distinct portals:
 
-- **Abstract Base Class (`Product`)**: Defines core product attributes (`id`, `name`, `price`, `quantity`), pure virtual methods (`virtual double calculateTax() const = 0`), and shared getters (`getSubtotal()`, `getTotal()`).
-- **Inheritance & Polymorphism**:
-  - `Perishable` class: Derived from `Product`, overrides `calculateTax()` to apply standard 2% grocery/produce tax.
-  - `Electronic` class: Derived from `Product`, overrides `calculateTax()` to apply 10% consumer electronics/appliances tax.
-- **Smart Pointers & Dynamic Dispatch**: Leverages modern `std::unique_ptr<Product>` in polymorphic `std::vector` containers to evaluate dynamic subtotals, category taxes, and global promo discounts.
-- **Micro-Execution via Stdin/Stdout**: Next.js checkout routes (`/api/checkout`) stream JSON cart payloads into the compiled `backend/pos_backend` binary via IPC pipe and ingest structured receipt calculations with sub-millisecond execution times.
-- **Zero-Downtime Fallback**: Includes an automatic JS runtime calculation fallback if the C++ binary is not compiled on the host machine.
+### 1. 🛍️ Customer Supermarket Storefront (`/`)
+- **Product Catalog**: 36+ everyday supermarket items across 7 departments:
+  - 🍎 **Vegetables & Fruits** *(Tomatoes, Onions, Potatoes, Apples, Bananas, Spinach)*
+  - 🌾 **Grocery & Staples** *(Basmati Rice, Whole Wheat Sourdough Bread, Farm Brown Eggs, Extra Virgin Olive Oil, Sea Salt, Raw Honey)*
+  - 🧼 **Household & Cleaning** *(Dettol Surface Cleaner Spray, Clorox Bleach Spray, Lavender Essential Oil, Scented Candle)*
+  - 🧴 **Beauty & Personal Care** *(Herbal Soap Bar, Bamboo Shampoo, Bamboo Toothbrush Set, Gentle Face Cleanser, Daily Skincare Hydration Set)*
+  - ☕ **Snacks & Drinks** *(Savory Ramen Noodles, Green & Herbal Tea Bags, Chocolate Chip Cookies, Potato Chips, Coca-Cola Can, Fresh Squeezed Orange Juice)*
+  - 🏃 **Lifestyle & Wellness** *(Insulated Stainless Bottle, Morning Roast Coffee, Multivitamins, Memory Sleeping Pillow)*
+  - 🍳 **Kitchen & Home** *(Cast Iron Dutch Oven, Ceramic Coffee Mug, Chef Knife Set, Kitchen Scissors, Canvas Tote Bag, Ergonomic Chair)*
+- **Smart Cart Drawer**: Live slide-out cart with instant quantity adjustment, item deletion, delivery address switcher, and order breakdown.
+- **Dynamic Checkout**: Supports Cash on Delivery (COD) and merchant UPI (`krishraj453@okicici`) with mandatory 12-digit UPI Reference / UTR ID verification.
+- **Customer Account Management**: Self-service profile modal to update delivery address, mobile number, and change account passwords.
+- **Live Order History & Delivery Tracking**: Customers track past orders with live status badges (*Order Placed*, *Packed*, *Dispatched*, *Delivered*), and can print thermal supermarket receipts.
+- **7-Day Customer Return System**:
+  - Customers can initiate return requests directly on any delivered order within 7 days.
+  - Interactive selection of items, quantities, return reasons, and photo proofs.
+  - Upon admin approval, customers receive an automated refund voucher code (`RET-XXXXXX`) that automatically discounts their next grocery order.
 
----
-
-## ✨ Key Features & Capabilities
-
-### 🛒 Customer Supermarket Portal
-- **Rich Visual Product Catalog**: 36+ verified supermarket products across 7 categories (*Beauty and Personal Care, Grocery, Household, Lifestyle, Others, Snacks and Drinks, Vegetables*).
-- **Instant Search & Category Filtering**: Real-time keyword search, category tabs, stock indicators, and MRP/discount badges.
-- **Smart Slide-Over Cart Drawer**: Real-time quantity adjustment, item deletion, subtotal calculations, and delivery address switcher.
-- **Profile & Password Management**: Customers can update their delivery address, mobile phone number, and change their account password directly from the user profile modal.
-- **Compulsory UPI Payment Flow**: Dynamic UPI payment dialog displaying merchant QR code (`krishraj453@okicici`) with mandatory 12-digit UPI UTR / Reference ID verification. Cash on Delivery (COD) is also supported.
-- **Order Tracking & Printable Receipt**: View previous orders, track live status (*Order Placed*, *Packed*, *Dispatched*, *Delivered*), and print or download formatted thermal receipts.
-- **7-Days Return & Automated Refund Vouchers**:
-  - Delivered orders within 7 days display an interactive **"Return"** button.
-  - Customers select returned items, reason, and comments.
-  - Once reviewed and approved in the Admin Portal, customers receive a unique instant refund coupon code (e.g. `RET-XXXXXX`) that applies directly at checkout.
-
-### 📊 Admin Command Center
-- **Executive Analytics Dashboard**: Real-time Gross Revenue, Active Orders count, Total Products, and Return Requests stats.
-- **Stock & Inventory Management**: Live inventory tracking, low-stock warnings, batch numbers, and dynamic expiry dates.
-- **Order Fulfillment & Dispatch**: Track all incoming customer orders and progress their delivery status (*Order Placed* → *Packed* → *Dispatched* → *Delivered*).
-- **Return Requests Review Desk**: Inspect customer return claims, approve or reject with comments, and automatically generate instant refund promo codes for customers.
-- **Promotions & Discount Engine**: Create percentage discounts, flat threshold coupons, or product-specific deals.
+### 2. 📊 Store Admin Command Center
+- **Executive Revenue Metrics**: Real-time sales revenue, active order counts, total catalog products, and pending returns.
+- **Order Pipeline & Dispatch Desk**: Track incoming customer orders and advance fulfillment status (*Order Placed* → *Packed* → *Dispatched* → *Delivered*).
+- **Return Requests Review Desk**: Review customer return claims, inspect reasons and photos, and issue 1-click approvals with auto-generated refund coupons.
+- **Inventory & Expiry Control**: Monitor live stock quantities, low-stock alerts, batch numbers, and dynamic shelf-life expiry dates.
+- **Promotions & Discount Engine**: Create active supermarket discount campaigns (percentage discounts, minimum order threshold discounts, or item-specific deals).
 
 ---
 
-## 🛠️ Tech Stack
+## ⚙️ C++ OOP Calculation Engine
 
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | Next.js 16 (App Router), React, Tailwind CSS, Lucide Icons |
-| **Backend API** | Next.js Serverless API Route Handlers (`app/api/*`) |
-| **Computation Engine** | C++11 (Object-Oriented Programming, Polymorphic inheritance, JSON parser) |
-| **Database** | SQLite3 (`pos.db`) with dynamic migrations and auto-seeding |
-| **Containerization** | Docker multi-stage build (automates `g++` compilation + Node.js runtime) |
+All cart mathematics (subtotals, category taxation, and promotional discounts) are processed by an optimized C++ Object-Oriented binary (`backend/pos_backend`):
+
+```
+       [ Next.js API Route (/api/checkout) ]
+                         │  (JSON Cart Payload via stdin)
+                         ▼
+             [ C++ OOP Engine (pos_backend) ]
+       ┌─────────────────┴──────────────────┐
+       ▼                                    ▼
+[ Perishable : Product ]         [ Electronic : Product ]
+(2% Food & Grocery Tax)          (10% Electronics Tax)
+       └─────────────────┬──────────────────┘
+                         │  (Polymorphic calculateTax() & Discount rules)
+                         ▼
+       [ Receipt JSON Streamed to stdout ]
+```
+
+- **Polymorphism**: `Perishable` and `Electronic` subclasses inherit from the abstract base `Product` class, dynamically calculating category-specific tax.
+- **Smart Pointers**: Memory-safe execution using `std::unique_ptr<Product>` in polymorphic vector containers.
+- **Resilient Fallback**: Next.js automatically falls back to an internal calculation runner if the binary is absent.
 
 ---
 
-## 🚀 Running Locally
+## 🗄️ Database Architecture (`pos.db`)
 
-### Prerequisites
-- **Node.js** (v18 or higher)
+The application runs on a local SQLite3 database with automatic migrations:
+
+- `Users`: Customer shopper accounts and store admin credentials with addresses and mobile numbers.
+- `Products`: 36 verified supermarket products with categories, units, prices, MRPs, batch numbers, expiry dates, and high-resolution Unsplash images.
+- `Sales`: Customer supermarket orders with delivery addresses, payment methods, UPI reference numbers, and delivery statuses.
+- `Line_Items`: Order line items referencing purchased product IDs and quantities.
+- `Return_Requests`: Customer return claims with reason, items list, and admin review statuses (`Pending`, `Approved`, `Rejected`).
+- `Discounts`: Active promotional discount codes and auto-generated return refund vouchers (`RET-*`).
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- **Node.js** (v18+)
 - **C++ Compiler** (`g++` or `clang++` supporting C++11)
-- **npm** or **yarn**
+- **npm**
 
-### 1. Clone & Install
+### 2. Installation
 ```bash
 git clone https://github.com/krish778188/equinox-pos.git
 cd equinox-pos/pos-inventory-dashboard
 npm install
 ```
 
-### 2. Compile the C++ Engine
+### 3. Compile the C++ Engine
 ```bash
 cd backend
 g++ -O3 -std=c++11 -Iinclude main.cpp -o pos_backend
 cd ..
 ```
 
-### 3. Initialize & Seed Database
+### 4. Seed Database
 ```bash
 node init-db.js
 ```
-*(Seeds the verified 36-item supermarket catalog, demo customer order history, and default credentials).*
+*(Seeds the 36 verified supermarket items, demo shopper profile, order history, and default credentials).*
 
-### 4. Start Development Server
+### 5. Launch the Server
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## ☁️ Deployment (Docker / Render)
-
-The repository includes a production-ready `Dockerfile` that:
-1. Installs GCC/G++ in a Debian builder container.
-2. Compiles `backend/main.cpp` into a high-performance Linux binary `pos_backend`.
-3. Runs `init-db.js` to ensure the SQLite schema and seed catalog are ready.
-4. Generates an optimized Next.js standalone production build.
-
-### Deploying to Render:
-1. Connect your GitHub repository to [Render.com](https://render.com).
-2. Choose **Web Service** and select **Docker** as the Environment.
-3. Render will build the container, compile the C++ binary, and launch the service automatically.
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ---
 
 ## 🔐 Default Credentials
 
-| Portal / Role | Email / Identifier | Password | Access Details |
+| Role | Email / Identifier | Password | Access Scope |
 | :--- | :--- | :--- | :--- |
-| **Demo Shopper (Customer)** | `user@equinox.com` | `user123` | Full customer supermarket storefront, cart, checkout, profile/password management, live order history & 7-days returns. |
-| **Store Admin** | `admin@equinox.com` | `equinox@123` | Full administrative command center, inventory, order processing, return request approvals, discount vouchers. |
+| **Demo Customer** | `user@equinox.com` | `user123` | Supermarket storefront browsing, cart, checkout, profile/password management, order tracking, and 7-day return requests. |
+| **Store Admin** | `admin@equinox.com` | `equinox@123` | Store administration portal, inventory management, order fulfillment pipeline, return approvals, and discount rules. |
+
+---
+
+## ☁️ Deployment (Render / Docker)
+
+The included `Dockerfile` builds a production Debian container that compiles the C++ engine with `g++` and packages the Next.js standalone server for zero-config deployment on **Render.com**.
 
 ---
 
 ## 📄 License
-This project is open-source and available under the [MIT License](LICENSE).
+MIT License. Open source and free to use.
