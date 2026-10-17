@@ -217,8 +217,8 @@ export function printSupermarketReceipt(order: any) {
         </div>
 
         <div class="footer-box">
-          <p><strong>7-Day Return Guarantee:</strong> Returns accepted within 7 days of delivery.<br/>
-          For return or refund assistance, visit Order History in your app or contact store support.</p>
+          <p><strong>7-Days Return Guarantee:</strong> Returns accepted within 7 days of delivery.<br/>
+          For return or refund assistance, visit Order History in our app or contact store support.</p>
           <p style="margin-top: 8px; font-weight: 700; color: #064e3b;">Thank you for shopping at Equinox Supermarket!</p>
         </div>
 

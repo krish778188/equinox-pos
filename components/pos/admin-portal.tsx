@@ -156,7 +156,7 @@ export function AdminPortal({
     gstRate: "5",
     gstin: "29ABCDE1234F1Z5",
     headerLine: "Thank you for shopping at Equinox Supermarket",
-    footerNote: "Fresh Groceries & Household Essentials · 7-Day Returns Policy",
+    footerNote: "Fresh Groceries & Household Essentials · 7-Days Returns Policy",
   })
   const [discountType, setDiscountType] = useState("FLAT_THRESHOLD")
 

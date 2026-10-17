@@ -457,7 +457,7 @@ export function OrderHistoryModal({
                   <RotateCcw className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-[12px] text-emerald-900">7-Day Return &amp; Refund Guarantee</p>
+                  <p className="font-bold text-[12px] text-emerald-900">7-Days Return &amp; Refund Guarantee</p>
                   <p className="text-[11px] text-emerald-800 mt-0.5">
                     Orders delivered within the last 7 days are eligible for easy returns. Click on any order to view details, download bill, or initiate refund.
                   </p>

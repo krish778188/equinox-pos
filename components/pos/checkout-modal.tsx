@@ -477,9 +477,7 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                   Status: {receipt.status || "Order Placed"}
                 </span>
               </div>
-              <p className="text-[11px] text-stone-500 mt-1 max-w-sm mx-auto">
-                Your order is currently being packed. Once our admin dispatches it, status will be marked <strong>Delivered</strong> and the 7-day return window will activate.
-              </p>
+
 
               {/* Order & Payment Metadata */}
               <div className="mt-4 pt-4 border-t border-stone-100 text-left text-xs text-stone-600 space-y-1.5">
@@ -553,14 +551,11 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                 </div>
               </div>
 
-              {/* 7-Day Return Policy Notice */}
+              {/* 7-Days Return Policy Notice */}
               <div className="mt-4 rounded-2xl border border-stone-200 bg-stone-50 p-4 text-[11px] text-stone-600">
-                <p className="font-bold text-stone-900 flex items-center gap-1.5 mb-1">
+                <p className="font-bold text-stone-900 flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                  7-Day Return Guarantee
-                </p>
-                <p className="leading-relaxed">
-                  Your 7-day return guarantee will become active once this order is marked <strong>Delivered</strong> by our store dispatch team.
+                  7-Days Return Guarantee
                 </p>
               </div>
             </div>

@@ -68,7 +68,7 @@ export function SupermarketCart({
 
         {/* Delivering To Pill */}
         {user?.address ? (
-          <div className="mx-4 mt-3 flex items-center justify-between rounded-2xl bg-emerald-50/80 border border-emerald-200/80 px-3 py-2 text-[11px] text-emerald-900 shadow-xs">
+          <div className="mx-4 mt-3 flex items-center gap-2 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 px-3 py-2 text-[11px] text-emerald-900 shadow-xs">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <MapPin className="h-4 w-4 text-emerald-700 shrink-0" />
               <div className="min-w-0 flex-1">
@@ -82,7 +82,7 @@ export function SupermarketCart({
               <button
                 type="button"
                 onClick={onChangeAddress}
-                className="ml-2 rounded-xl bg-white/90 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-800 hover:bg-emerald-700 hover:text-white transition shrink-0 cursor-pointer shadow-2xs"
+                className="shrink-0 rounded-xl bg-white/90 border border-emerald-200 px-2.5 py-1 text-[10px] font-bold text-emerald-800 hover:bg-emerald-700 hover:text-white transition cursor-pointer shadow-2xs"
               >
                 Change
               </button>
