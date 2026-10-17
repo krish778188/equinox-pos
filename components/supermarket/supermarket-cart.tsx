@@ -41,9 +41,9 @@ export function SupermarketCart({
 
   return (
     <>
-      <aside className="flex w-full lg:w-[380px] shrink-0 flex-col rounded-3xl border border-white/80 bg-white/85 shadow-[0_20px_50px_rgba(40,30,20,0.06)] backdrop-blur-2xl">
+      <aside className="flex w-full lg:w-[380px] shrink-0 flex-col rounded-3xl border border-white/80 bg-white/85 shadow-[0_20px_50px_rgba(40,30,20,0.06)] backdrop-blur-2xl overflow-hidden h-full">
         {/* Basket Header */}
-        <div className="flex items-center justify-between px-5 pb-3.5 pt-5 border-b border-stone-100">
+        <div className="flex items-center justify-between px-5 pb-3.5 pt-5 border-b border-stone-100 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
               <ShoppingBag className="h-5 w-5" />
@@ -68,7 +68,7 @@ export function SupermarketCart({
 
         {/* Delivering To Pill */}
         {user?.address ? (
-          <div className="mx-4 mt-3 flex items-center gap-2 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 px-3 py-2 text-[11px] text-emerald-900 shadow-xs">
+          <div className="mx-4 mt-3 shrink-0 flex items-center gap-2 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 px-3 py-2 text-[11px] text-emerald-900 shadow-xs">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <MapPin className="h-4 w-4 text-emerald-700 shrink-0" />
               <div className="min-w-0 flex-1">
@@ -92,7 +92,7 @@ export function SupermarketCart({
           <button
             type="button"
             onClick={onChangeAddress}
-            className="mx-4 mt-3 flex items-center justify-between rounded-2xl bg-amber-50/90 border border-amber-200/90 px-3 py-2 text-[11px] text-amber-950 hover:bg-amber-100/90 transition shadow-xs text-left cursor-pointer group"
+            className="mx-4 mt-3 shrink-0 flex items-center justify-between rounded-2xl bg-amber-50/90 border border-amber-200/90 px-3 py-2 text-[11px] text-amber-950 hover:bg-amber-100/90 transition shadow-xs text-left cursor-pointer group"
           >
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <MapPin className="h-4 w-4 text-amber-700 shrink-0" />
@@ -108,16 +108,16 @@ export function SupermarketCart({
         )}
 
         {/* Items List */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-24">
+        <div className={`min-h-0 flex-1 overflow-y-auto px-4 py-3 ${items.length === 0 ? "flex flex-col justify-center items-center" : "pb-6"}`}>
           {items.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center py-12">
-              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-stone-50 border border-stone-100 text-stone-300">
-                <ShoppingBag className="h-8 w-8" />
+            <div className="flex flex-col items-center justify-center gap-3 px-4 text-center my-auto py-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-stone-50 border border-stone-100 text-stone-300 shadow-2xs">
+                <ShoppingBag className="h-8 w-8 text-emerald-600/60" />
               </div>
               <div>
                 <p className="font-serif text-base font-bold text-stone-800">Your basket is empty</p>
-                <p className="mt-1 text-xs text-stone-400 max-w-[200px]">
-                  Explore farm fresh vegetables, daily groceries &amp; snacks to get started!
+                <p className="mt-1 text-xs text-stone-400 max-w-[220px] leading-relaxed">
+                  Explore farm fresh vegetables and fruits, daily groceries &amp; snacks to get started!
                 </p>
               </div>
             </div>
