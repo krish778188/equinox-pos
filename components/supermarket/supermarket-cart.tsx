@@ -14,7 +14,8 @@ export function SupermarketCart({
   onRemove,
   onClear,
   user,
-  onUpdateUser
+  onUpdateUser,
+  onChangeAddress
 }: {
   items: CartItem[]
   onIncrement: (id: string) => void
@@ -27,15 +28,16 @@ export function SupermarketCart({
 }) {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
 
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const mrpTotal = items.reduce((sum, item) => sum + (item.mrp || item.price * 1.2) * item.quantity, 0)
+  const safeItems = items || []
+  const subtotal = safeItems.reduce((sum, item) => sum + (Number(item?.price) || 0) * (Number(item?.quantity) || 1), 0)
+  const mrpTotal = safeItems.reduce((sum, item) => sum + (Number(item?.mrp) || (Number(item?.price) || 0) * 1.2) * (Number(item?.quantity) || 1), 0)
   const savings = Math.max(0, mrpTotal - subtotal)
   
-  const deliveryFee = items.length === 0 || subtotal >= 200 ? 0 : 35
-  const handlingFee = items.length === 0 ? 0 : 5
-  const tax = items.reduce((sum, item) => sum + item.price * item.quantity * 0.02, 0)
+  const deliveryFee = safeItems.length === 0 || subtotal >= 200 ? 0 : 35
+  const handlingFee = safeItems.length === 0 ? 0 : 5
+  const tax = safeItems.reduce((sum, item) => sum + (Number(item?.price) || 0) * (Number(item?.quantity) || 1) * 0.02, 0)
   const grandTotal = subtotal + deliveryFee + handlingFee + tax
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
+  const itemCount = safeItems.reduce((sum, item) => sum + (Number(item?.quantity) || 1), 0)
 
   return (
     <>

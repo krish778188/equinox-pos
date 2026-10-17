@@ -97,6 +97,7 @@ export default function Page() {
           .then(data => {
             if (data.products) setProducts(data.products)
           })
+          .catch(err => console.warn("Could not fetch products:", err))
 
         if (isAdmin) {
           fetch("/api/returns")
@@ -125,15 +126,17 @@ export default function Page() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return products.filter((p) => {
+    return (products || []).filter((p) => {
+      if (!p) return false
+      const cat = (p.category || "").toLowerCase()
       const matchesCategory =
         selectedCategory === "All Products" ||
-        p.category.toLowerCase() === selectedCategory.toLowerCase()
+        cat === selectedCategory.toLowerCase()
 
       const matchesSearch =
         !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
+        (p.name || "").toLowerCase().includes(q) ||
+        cat.includes(q) ||
         (p.brand && p.brand.toLowerCase().includes(q))
 
       return matchesCategory && matchesSearch

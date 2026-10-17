@@ -72,8 +72,8 @@ export function SupermarketProductGrid({
             const isSelected = selectedCategory === cat
             const icon = getCategoryIcon(cat)
             const count = cat === "All Products" 
-              ? products.length 
-              : products.filter(p => p.category === cat).length
+              ? (products || []).length 
+              : (products || []).filter(p => (p?.category || "") === cat).length
 
             return (
               <button

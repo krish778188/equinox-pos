@@ -40,7 +40,8 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
   })
 
   // Calculate order totals
-  const subtotal = items.reduce((acc, it) => acc + it.price * it.quantity, 0)
+  const safeItems = items || []
+  const subtotal = safeItems.reduce((acc, it) => acc + (Number(it?.price) || 0) * (Number(it?.quantity) || 1), 0)
   const deliveryFee = subtotal >= 200 || items.length === 0 ? 0 : 25
   const bagCost = formData.carryBags * 10
   const estimatedTax = Number((subtotal * 0.02).toFixed(2))

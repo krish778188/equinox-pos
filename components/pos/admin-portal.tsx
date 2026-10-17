@@ -177,9 +177,12 @@ export function AdminPortal({
   }
 
   const fetchStockAndSales = () => {
-    fetch("/api/sales").then(res => res.json()).then(data => {
-      if (data.sales) setSalesList(data.sales)
-    })
+    fetch("/api/sales")
+      .then(res => res.json())
+      .then(data => {
+        if (data.sales) setSalesList(data.sales)
+      })
+      .catch(console.error)
 
     fetch("/api/admin-stats")
       .then(res => res.json())
@@ -188,6 +191,7 @@ export function AdminPortal({
           setStats({ stock: data.stock || [], demand: data.demand || [] })
         }
       })
+      .catch(console.error)
   }
 
   useEffect(() => {
