@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, useRef } from "react"
 import { Sidebar, type NavKey } from "@/components/pos/sidebar"
 import { SupermarketProductGrid } from "@/components/supermarket/supermarket-product-grid"
 import { SupermarketCart, type CartItem } from "@/components/supermarket/supermarket-cart"
@@ -23,6 +23,15 @@ export default function Page() {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [pendingReturnsCount, setPendingReturnsCount] = useState(0)
+  const mainContentRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    // Scroll window/page to top
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior })
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTop = 0
+    }
+  }, [active])
 
   useEffect(() => {
     const saved = localStorage.getItem("supermarket_user") || localStorage.getItem("pos_user")
@@ -261,7 +270,7 @@ export default function Page() {
       />
 
       {/* Main Content Area */}
-      <main className="relative z-10 flex min-w-0 flex-1 flex-col">
+      <main ref={mainContentRef} className="relative z-10 flex min-w-0 flex-1 flex-col">
         {/* Top Header */}
         <header className="flex shrink-0 items-center justify-between px-2 pb-4 pt-1 border-b border-stone-200/60 mb-2">
           <div>

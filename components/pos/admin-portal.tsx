@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   Store,
   Coins,
@@ -100,6 +100,13 @@ export function AdminPortal({
   const [internalActiveTab, setInternalActiveTab] = useState<AdminTab>("settings")
   const activeTab = controlledActiveTab || internalActiveTab
   const setActiveTab = onSelectTab || setInternalActiveTab
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0
+    }
+  }, [activeTab])
   
   // Return requests state
   const [returnRequests, setReturnRequests] = useState<any[]>([])
@@ -487,7 +494,7 @@ export function AdminPortal({
   return (
     <>
       <div className="flex h-full flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto pb-32 pr-1">
+        <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto pb-32 pr-1">
 
           {/* TAB 1: STORE SETTINGS (First Tab for Admin) */}
           {activeTab === "settings" && (

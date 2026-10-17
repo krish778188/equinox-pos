@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Search, Plus, Minus, Info, Sparkles, Filter, Check } from "lucide-react"
 import { formatCurrency, SUPERMARKET_CATEGORIES, type Product } from "@/lib/pos-data"
 import { ProductDetailModal } from "./product-detail-modal"
@@ -44,6 +44,13 @@ export function SupermarketProductGrid({
 }) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const gridScrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (gridScrollRef.current) {
+      gridScrollRef.current.scrollTop = 0
+    }
+  }, [selectedCategory])
 
   const handleCardClick = (product: Product) => {
     setSelectedProduct(product)
@@ -95,7 +102,7 @@ export function SupermarketProductGrid({
       </div>
 
       {/* Products Grid */}
-      <div className="min-h-0 flex-1 overflow-y-auto pb-28 pr-1">
+      <div ref={gridScrollRef} className="min-h-0 flex-1 overflow-y-auto pb-28 pr-1">
         {products.length === 0 ? (
           <div className="flex h-56 flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-stone-300/80 bg-white/40 text-center p-6">
             <span className="text-3xl">🔍</span>
