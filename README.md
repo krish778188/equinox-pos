@@ -1,16 +1,26 @@
-# Equinox Supermarket POS & Inventory Management System 🛒
+# Equinox Supermarket & Inventory Management System 🛒
 
-A modern, full-stack Point of Sale (POS), e-commerce supermarket storefront, and inventory command center. Built with a high-performance **Next.js** frontend, an **offline-capable SQLite** database, and an **ultra-fast C++ Object-Oriented Programming (OOP) calculation engine** for zero-latency cart and tax processing.
+A modern, full-stack e-commerce supermarket storefront and store administration command center. Built with a high-performance **Next.js** frontend, an **offline-capable SQLite** database, and an **ultra-fast C++ Object-Oriented Programming (OOP) calculation engine** for zero-latency cart, tax, and discount processing.
+
+---
+
+## 🛍️ Supermarket Model Overview
+
+Equinox is designed as a unified supermarket retail platform with two tightly integrated experiences:
+
+1. **Customer Supermarket Storefront (`/`)**: A seamless, modern grocery shopping interface with instant search, category filtering, cart drawer, UPI/COD checkout, order history, and a self-service 7-day return request workflow.
+2. **Store Admin Command Center**: A management portal for real-time inventory monitoring, order status progression, return request approvals with automated refund coupon issuance, and promotional discount campaigns.
 
 ---
 
 ## 🏗️ Architecture & C++ OOP Backend Engine
 
-**Yes! The backend calculation engine remains the core C++ OOP architecture:**
+The heavy mathematical cart computations are powered by a native **C++ Object-Oriented Programming (OOP) engine**:
+
 - **Abstract Base Class (`Product`)**: Defines core product attributes (`id`, `name`, `price`, `quantity`), pure virtual methods (`virtual double calculateTax() const = 0`), and shared getters (`getSubtotal()`, `getTotal()`).
 - **Inheritance & Polymorphism**:
   - `Perishable` class: Derived from `Product`, overrides `calculateTax()` to apply standard 2% grocery/produce tax.
-  - `Electronic` class: Derived from `Product`, overrides `calculateTax()` to apply 10% consumer electronic tax.
+  - `Electronic` class: Derived from `Product`, overrides `calculateTax()` to apply 10% consumer electronics/appliances tax.
 - **Smart Pointers & Dynamic Dispatch**: Leverages modern `std::unique_ptr<Product>` in polymorphic `std::vector` containers to evaluate dynamic subtotals, category taxes, and global promo discounts.
 - **Micro-Execution via Stdin/Stdout**: Next.js checkout routes (`/api/checkout`) stream JSON cart payloads into the compiled `backend/pos_backend` binary via IPC pipe and ingest structured receipt calculations with sub-millisecond execution times.
 - **Zero-Downtime Fallback**: Includes an automatic JS runtime calculation fallback if the C++ binary is not compiled on the host machine.
@@ -19,13 +29,13 @@ A modern, full-stack Point of Sale (POS), e-commerce supermarket storefront, and
 
 ## ✨ Key Features & Capabilities
 
-### 🛍️ Customer Supermarket Portal
+### 🛒 Customer Supermarket Portal
 - **Rich Visual Product Catalog**: 36+ verified supermarket products across 7 categories (*Beauty and Personal Care, Grocery, Household, Lifestyle, Others, Snacks and Drinks, Vegetables*).
-- **Search & Category Filtering**: Instant real-time filtering, fast search bar, stock counters, and MRP/discount badges.
-- **Smart Slide-Over Cart Drawer**: Real-time quantity adjustment, item deletion, subtotal calculations, and address switcher.
-- **Profile & Password Management**: Customers can update their delivery address, mobile number, and change their account password directly from the user profile modal.
+- **Instant Search & Category Filtering**: Real-time keyword search, category tabs, stock indicators, and MRP/discount badges.
+- **Smart Slide-Over Cart Drawer**: Real-time quantity adjustment, item deletion, subtotal calculations, and delivery address switcher.
+- **Profile & Password Management**: Customers can update their delivery address, mobile phone number, and change their account password directly from the user profile modal.
 - **Compulsory UPI Payment Flow**: Dynamic UPI payment dialog displaying merchant QR code (`krishraj453@okicici`) with mandatory 12-digit UPI UTR / Reference ID verification. Cash on Delivery (COD) is also supported.
-- **Order Tracking & Printable Receipt**: View previous orders, track live status (*Order Placed*, *Packed*, *Dispatched*, *Delivered*), and print or download formatted thermal POS receipts.
+- **Order Tracking & Printable Receipt**: View previous orders, track live status (*Order Placed*, *Packed*, *Dispatched*, *Delivered*), and print or download formatted thermal receipts.
 - **7-Days Return & Automated Refund Vouchers**:
   - Delivered orders within 7 days display an interactive **"Return"** button.
   - Customers select returned items, reason, and comments.
@@ -34,9 +44,9 @@ A modern, full-stack Point of Sale (POS), e-commerce supermarket storefront, and
 ### 📊 Admin Command Center
 - **Executive Analytics Dashboard**: Real-time Gross Revenue, Active Orders count, Total Products, and Return Requests stats.
 - **Stock & Inventory Management**: Live inventory tracking, low-stock warnings, batch numbers, and dynamic expiry dates.
+- **Order Fulfillment & Dispatch**: Track all incoming customer orders and progress their delivery status (*Order Placed* → *Packed* → *Dispatched* → *Delivered*).
+- **Return Requests Review Desk**: Inspect customer return claims, approve or reject with comments, and automatically generate instant refund promo codes for customers.
 - **Promotions & Discount Engine**: Create percentage discounts, flat threshold coupons, or product-specific deals.
-- **Return Requests Review Desk**: Inspect customer return claims with photographic evidence, comments, and issue instant 1-click approvals with automated refund promo codes.
-- **POS Cashier Terminal**: Full barcode scanner support, fast keyboard-driven cart building, customer assignment, and instant bill generation.
 
 ---
 
@@ -104,12 +114,10 @@ The repository includes a production-ready `Dockerfile` that:
 
 ## 🔐 Default Credentials
 
-| Portal / Role | Username / Identifier | Password | Access Details |
+| Portal / Role | Email / Identifier | Password | Access Details |
 | :--- | :--- | :--- | :--- |
-| **Demo Customer** | `user@equinox.com` | `user123` | Storefront browsing, cart, checkout, profile/password changes, return requests, and order history. |
-| **System Admin** | `admin@equinox.com` *(or `admin`)* | `equinox@123` | Full access: inventory analytics, order management, return request approvals, discount codes, cashier POS. |
-| **Store Manager** | `manager` | `equinox` | Store inventory, cashier POS, employee oversight. |
-| **Cashier Terminal** | `USR-8888` | `demo123` | Quick barcode POS checkout terminal, bill generation. |
+| **Demo Shopper (Customer)** | `user@equinox.com` | `user123` | Full customer supermarket storefront, cart, checkout, profile/password management, live order history & 7-days returns. |
+| **Store Admin** | `admin@equinox.com` | `equinox@123` | Full administrative command center, inventory, order processing, return request approvals, discount vouchers. |
 
 ---
 
