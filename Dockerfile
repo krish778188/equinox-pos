@@ -38,7 +38,7 @@ COPY --from=builder /app/next.config.mjs ./next.config.mjs
 RUN mkdir -p /data
 ENV DB_PATH=/data/pos.db
 ENV HOSTNAME="0.0.0.0"
-ENV PORT=3000
+ENV PORT=10000
 
-EXPOSE 3000
-CMD ["sh", "-c", "node init-db.js && npx next start -H 0.0.0.0 -p ${PORT:-3000}"]
+EXPOSE 10000
+CMD ["sh", "-c", "node init-db.js && npx next start -H 0.0.0.0 -p ${PORT:-10000}"]

@@ -8,7 +8,7 @@
     "dev": "next dev --webpack",
     "prebuild": "node init-db.js",
     "build": "next build --webpack",
-    "start": "next start -H 0.0.0.0"
+    "start": "next start -H 0.0.0.0 -p ${PORT:-10000}"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
