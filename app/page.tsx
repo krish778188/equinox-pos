@@ -8,6 +8,7 @@ import { AdminPortal } from "@/components/pos/admin-portal"
 import { SupermarketAuth } from "@/components/auth/supermarket-auth"
 import { OrderHistoryModal } from "@/components/supermarket/order-history-modal"
 import { AddressModal } from "@/components/supermarket/address-modal"
+import { ProfileModal } from "@/components/supermarket/profile-modal"
 import { type Product, SUPERMARKET_CATEGORIES } from "@/lib/pos-data"
 import { Moon, Sun, MapPin } from "lucide-react"
 
@@ -21,6 +22,7 @@ export default function Page() {
   const [loggedInUser, setLoggedInUser] = useState<any>(null)
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false)
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [pendingReturnsCount, setPendingReturnsCount] = useState(0)
   const mainContentRef = useRef<HTMLElement>(null)
@@ -267,6 +269,7 @@ export default function Page() {
         onOpenOrderHistory={() => setIsOrderHistoryOpen(true)}
         onLogout={handleLogout}
         onChangeAddress={() => setIsAddressModalOpen(true)}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -376,6 +379,14 @@ export default function Page() {
         onClose={() => setIsAddressModalOpen(false)}
         currentAddress={loggedInUser?.address || ""}
         onSave={handleUpdateAddress}
+      />
+
+      {/* Profile & Password Management Modal */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        user={loggedInUser}
+        onUpdateUser={(updated) => setLoggedInUser(updated)}
       />
     </div>
   )

@@ -23,7 +23,8 @@ export function Sidebar({
   pendingReturnsCount = 0,
   onOpenOrderHistory,
   onLogout,
-  onChangeAddress
+  onChangeAddress,
+  onOpenProfile
 }: {
   active: NavKey
   onSelect: (key: NavKey) => void
@@ -32,6 +33,7 @@ export function Sidebar({
   onOpenOrderHistory: () => void
   onLogout: () => void
   onChangeAddress?: () => void
+  onOpenProfile?: () => void
 }) {
   const isAdmin = user?.role === "Admin" || user?.role === "Store Manager"
 
@@ -168,14 +170,22 @@ export function Sidebar({
         </nav>
       </div>
 
-      {/* User Profile Card (Bottom - No Logout Here) */}
+      {/* User Profile Card (Bottom - Click to Edit Profile & Change Password) */}
       <div className="mt-6 pt-3 border-t border-stone-100">
-        <div className="flex items-center gap-2.5 rounded-2xl border border-stone-200/70 bg-stone-50/70 p-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-700 text-xs font-bold text-white shrink-0">
+        <button
+          type="button"
+          onClick={onOpenProfile}
+          title="Click to manage profile & change password"
+          className="group flex w-full text-left items-center gap-2.5 rounded-2xl border border-stone-200/70 bg-stone-50/70 p-2.5 transition-all hover:bg-emerald-50/80 hover:border-emerald-200 hover:shadow-xs active:scale-[0.98] cursor-pointer"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-700 text-xs font-bold text-white shrink-0 group-hover:bg-emerald-800 transition">
             {user?.name ? user.name.substring(0, 2).toUpperCase() : "U"}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-bold text-stone-900">{user?.name || "Shopper"}</p>
+            <div className="flex items-center justify-between">
+              <p className="truncate text-xs font-bold text-stone-900 group-hover:text-emerald-900 transition">{user?.name || "Shopper"}</p>
+              <span className="text-[10px] font-bold text-emerald-700 opacity-0 group-hover:opacity-100 transition shrink-0 ml-1">Edit ⚙</span>
+            </div>
             <p className="truncate text-[10px] text-stone-400 capitalize">{user?.role === "Admin" ? "Store Admin" : "Verified Customer"}</p>
             {user?.role !== "Admin" && user?.address && (
               <p className="mt-0.5 truncate text-[10px] font-medium text-emerald-700 flex items-center gap-1 min-w-0" title={user.address}>
@@ -184,7 +194,7 @@ export function Sidebar({
               </p>
             )}
           </div>
-        </div>
+        </button>
       </div>
     </aside>
   )
