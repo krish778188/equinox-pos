@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { X, Package, Calendar, Clock, ChevronRight, Printer, AlertCircle, CheckCircle2, RotateCcw, ArrowLeft, Loader2, Download } from "lucide-react"
 import { formatCurrency } from "@/lib/pos-data"
+import { printSupermarketReceipt } from "@/lib/print-bill"
 
 export function OrderHistoryModal({
   isOpen,
@@ -116,80 +117,7 @@ export function OrderHistoryModal({
   }
 
   const handlePrintReceipt = (order: any) => {
-    const printWindow = window.open('', '', 'width=600,height=750')
-    if (!printWindow) return
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Bill Receipt - ${order.billNo}</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 25px; color: #1c1917; }
-            .header { text-align: center; border-bottom: 2px dashed #d6d3d1; padding-bottom: 15px; margin-bottom: 15px; }
-            .store-name { font-size: 22px; font-weight: bold; margin-bottom: 4px; }
-            .meta { font-size: 12px; color: #78716c; line-height: 1.5; }
-            table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 13px; }
-            th { text-align: left; border-bottom: 1px solid #e7e5e4; padding: 8px 4px; font-size: 11px; text-transform: uppercase; color: #78716c; }
-            td { padding: 8px 4px; border-bottom: 1px solid #f5f5f4; }
-            .total-row { font-size: 16px; font-weight: bold; border-top: 2px solid #1c1917; padding-top: 10px; }
-            .footer { margin-top: 25px; text-align: center; font-size: 11px; color: #78716c; border-top: 1px dashed #d6d3d1; padding-top: 15px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="store-name">EQUINOX SUPERMARKET</div>
-            <div class="meta">
-              Order No: <strong>${order.orderId || order.billNo}</strong><br/>
-              Invoice No: <strong>${order.billNo}</strong><br/>
-              Status: <strong>${order.status || 'Order Placed'}</strong><br/>
-              Payment Method: <strong>${order.payment_method || 'UPI (krishraj453@okicici)'}</strong><br/>
-              System Payment ID: <strong>${order.payment_id || 'N/A'}</strong><br/>
-              ${order.upi_ref_id && order.upi_ref_id !== 'N/A' ? `UPI Ref / UTR No: <strong>${order.upi_ref_id}</strong><br/>` : ''}
-              Date: ${new Date(order.created_at).toLocaleString('en-IN')}<br/>
-              Customer: ${order.customer_name || user?.name || "Shopper"}<br/>
-              Delivery Address: ${order.delivery_address || "Home Delivery"}
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Qty</th>
-                <th>Price</th>
-                <th style="text-align:right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${(order.items || []).map((it: any) => `
-                <tr>
-                  <td>${it.product_name || "Item"}</td>
-                  <td>${it.quantity}</td>
-                  <td>₹${it.price}</td>
-                  <td style="text-align:right">₹${it.price * it.quantity}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:14px;">
-            <span>Subtotal</span>
-            <span>₹${order.total_amount}</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:16px; font-weight:bold; border-top:1px solid #1c1917; padding-top:8px;">
-            <span>Grand Total Paid</span>
-            <span>₹${order.total_amount}</span>
-          </div>
-          <div class="footer">
-            <p><strong>Return Policy:</strong> Returns accepted within 7 days of delivery.<br/>
-            Eligible for return until: <strong>${order.lastReturnDate}</strong></p>
-            <p>Thank you for shopping with Equinox Supermarket!</p>
-          </div>
-          <script>
-            window.onload = function() { window.print(); }
-          </script>
-        </body>
-      </html>
-    `)
-    printWindow.document.close()
+    printSupermarketReceipt(order)
   }
 
   if (!isOpen) return null

@@ -30,6 +30,7 @@ import {
   FileText
 } from "lucide-react"
 import { formatCurrency, SUPERMARKET_CATEGORIES } from "@/lib/pos-data"
+import { printSupermarketReceipt } from "@/lib/print-bill"
 
 const cardBase =
   "rounded-3xl border border-white/80 bg-white/85 shadow-[0_20px_50px_rgba(40,30,20,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl"
@@ -1269,9 +1270,23 @@ export function AdminPortal({
                               </div>
                             </td>
                             <td className="px-3.5 py-3 align-middle text-right whitespace-nowrap">
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 group-hover:text-emerald-800 group-hover:underline">
-                                View Bill →
-                              </span>
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    printSupermarketReceipt(sale)
+                                  }}
+                                  title="Print official customer bill receipt"
+                                  className="rounded-xl border border-stone-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-stone-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-900 transition flex items-center gap-1 shadow-2xs"
+                                >
+                                  <Printer className="h-3 w-3 text-emerald-600" />
+                                  <span>Print Bill</span>
+                                </button>
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 group-hover:text-emerald-800 group-hover:underline">
+                                  View →
+                                </span>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1395,10 +1410,10 @@ export function AdminPortal({
             <div className="flex flex-col sm:flex-row gap-3 p-6 border-t border-stone-100 bg-stone-50 print:hidden">
               <button
                 type="button"
-                onClick={() => window.print()}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-xs font-bold text-stone-700 hover:bg-stone-100 active:scale-[0.98]"
+                onClick={() => printSupermarketReceipt(selectedBill)}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-xs font-bold text-stone-700 hover:bg-stone-100 active:scale-[0.98] cursor-pointer shadow-xs"
               >
-                <Printer className="h-4 w-4" /> Print Invoice Bill
+                <Printer className="h-4 w-4 text-emerald-700" /> Print Official Bill
               </button>
 
               {selectedBill.status === "Order Placed" && (
