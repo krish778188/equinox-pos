@@ -778,7 +778,7 @@ export function AdminPortal({
                     className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-700 shadow-xs hover:bg-stone-50 transition active:scale-95 disabled:opacity-50"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 text-emerald-700 ${loadingReturns ? "animate-spin" : ""}`} />
-                    <span>{loadingReturns ? "Refreshing..." : "Manual Refresh"}</span>
+                    <span>{loadingReturns ? "Refreshing..." : "Refresh"}</span>
                   </button>
                 </div>
 
