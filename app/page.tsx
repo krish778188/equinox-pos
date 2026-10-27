@@ -159,7 +159,8 @@ export default function Page() {
       const matchesCategory =
         selectedCategory === "All Products" ||
         cat === selectedCategory.toLowerCase() ||
-        (selectedCategory.toLowerCase().includes("vegetable") && cat.includes("vegetable"))
+        (selectedCategory.toLowerCase().includes("vegetable") && cat.includes("vegetable")) ||
+        (selectedCategory.toLowerCase().startsWith("other") && (cat.startsWith("other") || cat === "lifestyle"))
 
       const matchesSearch =
         !q ||

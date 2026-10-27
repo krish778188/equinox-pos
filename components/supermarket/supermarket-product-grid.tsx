@@ -16,7 +16,7 @@ function getCategoryIcon(category: string) {
     case "Beauty and Personal Care": return "✨"
     case "Household": return "🧼"
     case "Stationary": return "📚"
-    case "Lifestyle": return "🧘"
+    case "Other":
     case "Others": return "🎁"
     default: return "🛒"
   }

@@ -212,7 +212,7 @@
   {
     "id": "sku-lfs-01",
     "name": "Vacuum Insulated Stainless Steel Bottle (750ml)",
-    "category": "Lifestyle",
+    "category": "Other",
     "price": 499,
     "stock": 30,
     "brand": "HydroVibe",
@@ -226,7 +226,7 @@
   {
     "id": "sku-lfs-02",
     "name": "Freshly Brewed Morning Roast Coffee (Mug)",
-    "category": "Lifestyle",
+    "category": "Other",
     "price": 140,
     "stock": 40,
     "brand": "Artisan Roast",
@@ -240,7 +240,7 @@
   {
     "id": "sku-lfs-03",
     "name": "Daily Essential Multivitamin Capsules (30 Count)",
-    "category": "Lifestyle",
+    "category": "Other",
     "price": 290,
     "stock": 50,
     "brand": "NutriLife",
@@ -254,7 +254,7 @@
   {
     "id": "sku-lfs-04",
     "name": "Hypoallergenic Comfort Bed Sleeping Pillow",
-    "category": "Lifestyle",
+    "category": "Other",
     "price": 449,
     "stock": 25,
     "brand": "CloudRest",
@@ -268,7 +268,7 @@
   {
     "id": "sku-oth-01",
     "name": "Enameled Cast Iron Dutch Oven Pot (4.5L)",
-    "category": "Others",
+    "category": "Other",
     "price": 1299,
     "stock": 40,
     "brand": "Le Gourmet",
@@ -282,7 +282,7 @@
   {
     "id": "sku-oth-02",
     "name": "Classic Ceramic Coffee Cup & Saucer (300ml)",
-    "category": "Others",
+    "category": "Other",
     "price": 179,
     "stock": 35,
     "brand": "ClayCraft",
@@ -296,7 +296,7 @@
   {
     "id": "sku-oth-03",
     "name": "Professional Chef Kitchen Knife Set (5-Piece)",
-    "category": "Others",
+    "category": "Other",
     "price": 699,
     "stock": 25,
     "brand": "BladeCraft",
@@ -310,7 +310,7 @@
   {
     "id": "sku-oth-04",
     "name": "Heavy Duty Stainless Steel Scissors",
-    "category": "Others",
+    "category": "Other",
     "price": 149,
     "stock": 30,
     "brand": "Scotch Master",
@@ -324,7 +324,7 @@
   {
     "id": "sku-oth-05",
     "name": "Eco-Friendly Canvas Shopping Tote Bag",
-    "category": "Others",
+    "category": "Other",
     "price": 99,
     "stock": 50,
     "brand": "EcoGreen",
@@ -338,7 +338,7 @@
   {
     "id": "sku-oth-06",
     "name": "Ergonomic High-Back Gaming Office Chair",
-    "category": "Others",
+    "category": "Other",
     "price": 4999,
     "stock": 15,
     "brand": "SecretLab Comfort",

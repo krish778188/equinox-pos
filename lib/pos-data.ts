@@ -21,8 +21,7 @@ export const SUPERMARKET_CATEGORIES = [
   "Beauty and Personal Care",
   "Household",
   "Stationary",
-  "Lifestyle",
-  "Others",
+  "Other",
 ] as const
 
 export type SupermarketCategory = typeof SUPERMARKET_CATEGORIES[number]

@@ -15,8 +15,7 @@ Equinox is engineered around a modern grocery supermarket experience divided int
   - 🧼 **Household & Cleaning** *(Dettol Surface Cleaner Spray, Clorox Bleach Spray, Lavender Essential Oil, Scented Candle)*
   - 🧴 **Beauty & Personal Care** *(Herbal Soap Bar, Bamboo Shampoo, Bamboo Toothbrush Set, Gentle Face Cleanser, Daily Skincare Hydration Set)*
   - ☕ **Snacks & Drinks** *(Savory Ramen Noodles, Green & Herbal Tea Bags, Chocolate Chip Cookies, Potato Chips, Coca-Cola Can, Fresh Squeezed Orange Juice)*
-  - 🏃 **Lifestyle & Wellness** *(Insulated Stainless Bottle, Morning Roast Coffee, Multivitamins, Memory Sleeping Pillow)*
-  - 🍳 **Kitchen & Home** *(Cast Iron Dutch Oven, Ceramic Coffee Mug, Chef Knife Set, Kitchen Scissors, Canvas Tote Bag, Ergonomic Chair)*
+  - 🎁 **Other** *(Insulated Stainless Bottle, Morning Roast Coffee, Multivitamins, Memory Sleeping Pillow, Cast Iron Dutch Oven, Ceramic Coffee Mug, Chef Knife Set, Kitchen Scissors, Canvas Tote Bag, Ergonomic Chair)*
 - **Smart Cart Drawer**: Live slide-out cart with instant quantity adjustment, item deletion, delivery address switcher, and order breakdown.
 - **Dynamic Checkout**: Supports Cash on Delivery (COD) and merchant UPI (`krishraj453@okicici`) with mandatory 12-digit UPI Reference / UTR ID verification.
 - **Customer Account Management**: Self-service profile modal to update delivery address, mobile number, and change account passwords.
