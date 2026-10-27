@@ -423,10 +423,6 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                     <p className="text-[11px] leading-relaxed">
                       You can pay via Cash or scan the delivery executive's UPI QR code upon arrival at your doorstep. Exact change is appreciated!
                     </p>
-                    <div className="mt-2 text-[10px] font-semibold text-stone-500 flex items-center justify-between">
-                      <span>System Payment ID: <span className="font-mono font-bold text-stone-700">Auto-Generated</span></span>
-                      <span className="text-emerald-700">UPI Ref: Not Required</span>
-                    </div>
                   </div>
                 )}
               </div>
