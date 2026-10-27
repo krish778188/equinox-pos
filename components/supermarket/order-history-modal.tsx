@@ -212,7 +212,7 @@ export function OrderHistoryModal({
                     <Clock className="h-3.5 w-3.5 text-stone-400" />
                     <span>
                       {selectedOrder.status === "Order Placed" ? (
-                        <strong className="text-blue-800">Order placed and being packed. Return window starts once marked Delivered.</strong>
+                        <strong className="text-blue-800">Order placed and being packed.</strong>
                       ) : selectedOrder.isReturnEligible ? (
                         <>Eligible for return until: <strong className="text-emerald-800">{selectedOrder.lastReturnDate}</strong> ({selectedOrder.daysRemaining} days left)</>
                       ) : selectedOrder.status === "Refunded" || selectedOrder.return_status === "Approved" ? (
@@ -275,7 +275,7 @@ export function OrderHistoryModal({
               {selectedOrder.status === "Order Placed" && (
                 <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 flex items-center gap-2">
                   <Package className="h-4 w-4 text-blue-600 shrink-0" />
-                  <span>Your order has been <strong>Placed and is being processed</strong>. Once delivered by admin, you can initiate a return or exchange within 7 days.</span>
+                  <span>Your order has been <strong>Placed and is being processed</strong>.</span>
                 </div>
               )}
 
