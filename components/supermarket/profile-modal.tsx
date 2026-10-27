@@ -214,7 +214,7 @@ export function ProfileModal({
           <div className="mt-2 pt-3 border-t border-stone-100 flex flex-col gap-3">
             <div className="flex items-center gap-1.5">
               <Lock className="h-3.5 w-3.5 text-stone-500" />
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-400">Change Password (Optional)</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-400">Change Password</p>
             </div>
 
             {/* Current Password */}
