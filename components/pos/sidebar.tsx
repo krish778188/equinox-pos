@@ -184,7 +184,9 @@ export function Sidebar({
                   <span>Equinox Wallet</span>
                 </div>
                 <span className="font-mono text-xs font-bold text-emerald-800 bg-white px-2 py-0.5 rounded-lg border border-emerald-200 shadow-2xs">
-                  {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(walletBalance || Number(user?.wallet_balance || 0))}
+                  {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(
+                    typeof walletBalance === "number" ? walletBalance : Number(user?.wallet_balance ?? 0)
+                  )}
                 </span>
               </button>
             </div>

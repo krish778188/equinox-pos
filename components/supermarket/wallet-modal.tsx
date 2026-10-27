@@ -37,6 +37,9 @@ export function WalletModal({ isOpen, onClose, user, onBalanceUpdate }: WalletMo
         setBalance(data.wallet_balance)
         setTransactions(data.transactions || [])
         onBalanceUpdate?.(data.wallet_balance)
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("wallet-updated", { detail: data.wallet_balance }))
+        }
       }
     } catch (e) {
       console.error("Failed to load wallet:", e)

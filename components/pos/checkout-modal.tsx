@@ -197,6 +197,9 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
             localStorage.setItem("supermarket_user", JSON.stringify(parsed))
           }
         } catch (e) {}
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("wallet-updated", { detail: data.newWalletBalance }))
+        }
       }
 
       setReceipt({

@@ -56,6 +56,51 @@ export default function Page() {
     }
   }, [])
 
+  const refreshWallet = () => {
+    if (!loggedInUser?.email) return
+    const isAdmin = loggedInUser.role === "Admin" || loggedInUser.role === "Store Manager"
+    if (isAdmin) return
+    fetch(`/api/user/wallet?email=${encodeURIComponent(loggedInUser.email)}&t=${Date.now()}`, { cache: "no-store" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && typeof data.wallet_balance === "number") {
+          setWalletBalance(data.wallet_balance)
+          setLoggedInUser((prev: any) => {
+            if (prev && prev.wallet_balance !== data.wallet_balance) {
+              return { ...prev, wallet_balance: data.wallet_balance }
+            }
+            return prev
+          })
+        }
+      })
+      .catch(console.error)
+  }
+
+  const handleUpdateUser = (updated: any) => {
+    setLoggedInUser(updated)
+    if (typeof updated?.wallet_balance === "number") {
+      setWalletBalance(updated.wallet_balance)
+    }
+    localStorage.setItem("supermarket_user", JSON.stringify(updated))
+  }
+
+  useEffect(() => {
+    const handleWalletUpdated = (e: any) => {
+      if (typeof e.detail === "number") {
+        setWalletBalance(e.detail)
+        setLoggedInUser((prev: any) => prev ? { ...prev, wallet_balance: e.detail } : prev)
+      } else {
+        refreshWallet()
+      }
+    }
+    window.addEventListener("wallet-updated", handleWalletUpdated)
+    window.addEventListener("focus", refreshWallet)
+    return () => {
+      window.removeEventListener("wallet-updated", handleWalletUpdated)
+      window.removeEventListener("focus", refreshWallet)
+    }
+  }, [loggedInUser?.email])
+
   const handleUpdateAddress = async (newAddress: string) => {
     if (!loggedInUser) return
 
@@ -138,15 +183,7 @@ export default function Page() {
           })
           .catch(console.error)
       } else if (loggedInUser?.email) {
-        // Fetch wallet balance for user
-        fetch(`/api/user/wallet?email=${encodeURIComponent(loggedInUser.email)}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.success && typeof data.wallet_balance === "number") {
-              setWalletBalance(data.wallet_balance)
-            }
-          })
-          .catch(console.error)
+        refreshWallet()
       }
     }
   }, [loggedInUser])
@@ -370,7 +407,7 @@ export default function Page() {
               onRemove={remove}
               onClear={() => setCart([])}
               user={loggedInUser}
-              onUpdateUser={setLoggedInUser}
+              onUpdateUser={handleUpdateUser}
               onChangeAddress={() => setIsAddressModalOpen(true)}
             />
           </div>
@@ -406,7 +443,7 @@ export default function Page() {
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         user={loggedInUser}
-        onUpdateUser={(updated) => setLoggedInUser(updated)}
+        onUpdateUser={handleUpdateUser}
       />
 
       {/* Equinox Wallet Modal */}
@@ -414,7 +451,10 @@ export default function Page() {
         isOpen={isWalletModalOpen}
         onClose={() => setIsWalletModalOpen(false)}
         user={loggedInUser}
-        onBalanceUpdate={(bal) => setWalletBalance(bal)}
+        onBalanceUpdate={(bal) => {
+          setWalletBalance(bal)
+          setLoggedInUser((prev: any) => prev ? { ...prev, wallet_balance: bal } : prev)
+        }}
       />
     </div>
   )
