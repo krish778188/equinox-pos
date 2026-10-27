@@ -100,7 +100,12 @@ export function OrderHistoryModal({
 
       const data = await res.json()
       if (data.success) {
-        setReturnSuccessMsg(data.message || "Your return request has been submitted. It will be reviewed and approved by admin within 48 hours.")
+        const isCod = (selectedOrder?.payment_method || "").toLowerCase().includes("cash") || (selectedOrder?.payment_method || "").toLowerCase().includes("cod")
+        setReturnSuccessMsg(
+          data.message || (isCod 
+            ? "Your return request has been submitted. Money will be refunded to wallet within 7-8 working days upon admin approval."
+            : "Your return request has been submitted. Money will be refunded to your UPI account within 7-8 working days upon admin approval.")
+        )
         setIsReturnPromptOpen(false)
         // Refresh orders list
         await fetchOrders()
@@ -261,7 +266,9 @@ export function OrderHistoryModal({
               {(selectedOrder.status === "Refunded" || selectedOrder.return_status === "Approved") && (
                 <div className="rounded-2xl border border-purple-200 bg-purple-50 p-3 text-xs text-purple-800 flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-purple-600 shrink-0" />
-                  <span>Return <strong>Accepted &amp; Refunded</strong>. Full refund of {formatCurrency(selectedOrder.total_amount)} has been approved.</span>
+                  <span>
+                    Return <strong>Accepted &amp; Refunded</strong>. Full refund of {formatCurrency(selectedOrder.total_amount)} {((selectedOrder.payment_method || "").toLowerCase().includes("cash") || (selectedOrder.payment_method || "").toLowerCase().includes("cod")) ? "has been credited to your Equinox Wallet." : "has been refunded to your UPI account."}
+                  </span>
                 </div>
               )}
 
@@ -306,9 +313,11 @@ export function OrderHistoryModal({
                   <div className="mb-3 rounded-xl bg-white/80 p-3 border border-amber-200/60 text-xs text-amber-800 flex items-start gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
                     <div>
-                      <p className="font-semibold">Important Return Notice:</p>
-                      <p className="mt-0.5 text-amber-700">
-                        Your return request will be reviewed and approved by admin <strong>within 48 hours</strong>. Upon approval, full refund of {formatCurrency(selectedOrder.total_amount)} will be issued.
+                      <p className="font-semibold">Refund Policy ({((selectedOrder.payment_method || "").toLowerCase().includes("cash") || (selectedOrder.payment_method || "").toLowerCase().includes("cod")) ? "Cash on Delivery" : "UPI Payment"}):</p>
+                      <p className="mt-0.5 font-medium text-amber-900">
+                        {((selectedOrder.payment_method || "").toLowerCase().includes("cash") || (selectedOrder.payment_method || "").toLowerCase().includes("cod"))
+                          ? "Money will be refunded to wallet within 7-8 working days upon admin approval."
+                          : "Money will be refunded to your UPI account within 7-8 working days upon admin approval."}
                       </p>
                     </div>
                   </div>

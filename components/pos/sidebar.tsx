@@ -11,7 +11,8 @@ import {
   Store,
   LogOut,
   ShieldCheck,
-  MapPin
+  MapPin,
+  Wallet
 } from "lucide-react"
 
 export type NavKey = "shop" | "returns" | "stock" | "demand" | "sales" | "settings"
@@ -22,6 +23,8 @@ export function Sidebar({
   user,
   pendingReturnsCount = 0,
   onOpenOrderHistory,
+  onOpenWallet,
+  walletBalance,
   onLogout,
   onChangeAddress,
   onOpenProfile
@@ -31,6 +34,8 @@ export function Sidebar({
   user: any
   pendingReturnsCount?: number
   onOpenOrderHistory: () => void
+  onOpenWallet?: () => void
+  walletBalance?: number
   onLogout: () => void
   onChangeAddress?: () => void
   onOpenProfile?: () => void
@@ -164,6 +169,23 @@ export function Sidebar({
                   </span>
                   <span>Order History</span>
                 </div>
+              </button>
+
+              {/* Equinox Wallet Tab */}
+              <button
+                type="button"
+                onClick={onOpenWallet}
+                className="group mt-2 flex w-full items-center justify-between rounded-2xl border border-emerald-200/80 bg-emerald-50/70 px-3.5 py-2.5 text-sm font-semibold text-emerald-950 transition-all hover:bg-emerald-100/80 hover:border-emerald-300 active:scale-[0.98]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-emerald-700 shadow-xs group-hover:scale-105 transition-transform">
+                    <Wallet className="h-4 w-4" />
+                  </span>
+                  <span>Equinox Wallet</span>
+                </div>
+                <span className="font-mono text-xs font-bold text-emerald-800 bg-white px-2 py-0.5 rounded-lg border border-emerald-200 shadow-2xs">
+                  {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(walletBalance || Number(user?.wallet_balance || 0))}
+                </span>
               </button>
             </div>
           )}

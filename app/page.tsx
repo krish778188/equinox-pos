@@ -9,6 +9,7 @@ import { SupermarketAuth } from "@/components/auth/supermarket-auth"
 import { OrderHistoryModal } from "@/components/supermarket/order-history-modal"
 import { AddressModal } from "@/components/supermarket/address-modal"
 import { ProfileModal } from "@/components/supermarket/profile-modal"
+import { WalletModal } from "@/components/supermarket/wallet-modal"
 import { type Product, SUPERMARKET_CATEGORIES } from "@/lib/pos-data"
 import { Moon, Sun, MapPin } from "lucide-react"
 
@@ -21,6 +22,8 @@ export default function Page() {
   
   const [loggedInUser, setLoggedInUser] = useState<any>(null)
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false)
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
+  const [walletBalance, setWalletBalance] = useState<number>(0)
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
@@ -124,20 +127,26 @@ export default function Page() {
       }
 
       if (isAdmin) {
-        const fetchReturns = () => {
-          fetch(`/api/returns?t=${Date.now()}`, { cache: "no-store" })
-            .then(res => res.json())
-            .then(data => {
-              if (data.success && data.requests) {
-                const pending = (data.requests as any[]).filter(r => r.status === "Pending").length
-                setPendingReturnsCount(pending)
-              }
-            })
-            .catch(console.error)
-        }
-        fetchReturns()
-        const retInterval = setInterval(fetchReturns, 5000)
-        return () => clearInterval(retInterval)
+        // Fetch returns once on load (strictly manual refresh in Admin Portal per instructions)
+        fetch(`/api/returns?t=${Date.now()}`, { cache: "no-store" })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.requests) {
+              const pending = (data.requests as any[]).filter(r => r.status === "Pending").length
+              setPendingReturnsCount(pending)
+            }
+          })
+          .catch(console.error)
+      } else if (loggedInUser?.email) {
+        // Fetch wallet balance for user
+        fetch(`/api/user/wallet?email=${encodeURIComponent(loggedInUser.email)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && typeof data.wallet_balance === "number") {
+              setWalletBalance(data.wallet_balance)
+            }
+          })
+          .catch(console.error)
       }
     }
   }, [loggedInUser])
@@ -275,6 +284,8 @@ export default function Page() {
         user={loggedInUser}
         pendingReturnsCount={pendingReturnsCount}
         onOpenOrderHistory={() => setIsOrderHistoryOpen(true)}
+        onOpenWallet={() => setIsWalletModalOpen(true)}
+        walletBalance={walletBalance}
         onLogout={handleLogout}
         onChangeAddress={() => setIsAddressModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
@@ -395,6 +406,14 @@ export default function Page() {
         onClose={() => setIsProfileModalOpen(false)}
         user={loggedInUser}
         onUpdateUser={(updated) => setLoggedInUser(updated)}
+      />
+
+      {/* Equinox Wallet Modal */}
+      <WalletModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        user={loggedInUser}
+        onBalanceUpdate={(bal) => setWalletBalance(bal)}
       />
     </div>
   )

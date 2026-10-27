@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     const newUser: any = await new Promise((resolve, reject) => {
       db.run(
-        `INSERT INTO Users (name, email, mobile, password, role, address) VALUES (?, ?, ?, ?, 'user', ?)`,
+        `INSERT INTO Users (name, email, mobile, password, role, address, wallet_balance) VALUES (?, ?, ?, ?, 'user', ?, 0.00)`,
         [name.trim(), cleanEmail, cleanMobile, password, address ? address.trim() : ""],
         function (err) {
           if (err) return reject(err)
@@ -38,7 +38,8 @@ export async function POST(request: Request) {
             email: cleanEmail,
             mobile: cleanMobile,
             role: 'user',
-            address: address ? address.trim() : ""
+            address: address ? address.trim() : "",
+            wallet_balance: 0.00
           })
         }
       )

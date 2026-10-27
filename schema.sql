@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS Users (
     password VARCHAR(255) NOT NULL,
     role VARCHAR(50) DEFAULT 'user',
     address TEXT,
+    wallet_balance DECIMAL(10, 2) DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -84,5 +85,15 @@ CREATE TABLE IF NOT EXISTS Employees (
     address TEXT,
     id_type VARCHAR(50),
     govt_id VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS WalletTransactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email VARCHAR(255) NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    description TEXT,
+    reference_id VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

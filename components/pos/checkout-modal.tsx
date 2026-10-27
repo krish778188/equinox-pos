@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Loader2, Printer, CheckCircle2, ShoppingBag, ShieldCheck, MapPin, QrCode, Copy, Check, Smartphone, Banknote, AlertCircle, ChevronRight } from "lucide-react"
+import { X, Loader2, Printer, CheckCircle2, ShoppingBag, ShieldCheck, MapPin, QrCode, Copy, Check, Smartphone, Banknote, AlertCircle, ChevronRight, Wallet } from "lucide-react"
 import { formatCurrency, type Product } from "@/lib/pos-data"
 import QRCode from "qrcode"
 
@@ -39,13 +39,20 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
     carryBags: 0,
   })
 
+  // Equinox Wallet Balance
+  const [walletBalance, setWalletBalance] = useState<number>(Number(user?.wallet_balance || 0))
+  const [useWallet, setUseWallet] = useState<boolean>(false)
+
   // Calculate order totals
   const safeItems = items || []
   const subtotal = safeItems.reduce((acc, it) => acc + (Number(it?.price) || 0) * (Number(it?.quantity) || 1), 0)
   const deliveryFee = subtotal >= 200 || items.length === 0 ? 0 : 25
   const bagCost = formData.carryBags * 10
   const estimatedTax = Number((subtotal * 0.02).toFixed(2))
-  const grandTotal = subtotal + deliveryFee + bagCost + estimatedTax
+  const subtotalBeforeWallet = subtotal + deliveryFee + bagCost + estimatedTax
+  const walletDeduction = useWallet && walletBalance > 0 ? Math.min(walletBalance, subtotalBeforeWallet) : 0
+  const grandTotal = Math.max(0, subtotalBeforeWallet - walletDeduction)
+  const isFullyPaidByWallet = Boolean(useWallet && walletDeduction > 0 && grandTotal === 0)
 
   useEffect(() => {
     if (user && isOpen) {
@@ -55,6 +62,20 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
         phone: prev.phone || user.mobile || user.phone || "",
         address: prev.address || user.address || (user.email === "user@equinox.com" ? "IIIT Nagpur, waranga, Nagpur-441108" : ""),
       }))
+
+      if (user.email) {
+        fetch(`/api/user/wallet?email=${encodeURIComponent(user.email)}&t=${Date.now()}`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.success && data.wallet_balance !== undefined) {
+              setWalletBalance(data.wallet_balance)
+              if (data.wallet_balance > 0) {
+                setUseWallet(true)
+              }
+            }
+          })
+          .catch(console.error)
+      }
     }
   }, [user, isOpen])
 
@@ -86,8 +107,8 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
   const handleProcessPayment = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Enforce compulsory UPI Reference Number
-    if (paymentMethod === "UPI") {
+    // Enforce compulsory UPI Reference Number only if not fully covered by Equinox Wallet
+    if (!isFullyPaidByWallet && paymentMethod === "UPI") {
       const cleanUtr = customUtr.trim()
       if (!cleanUtr) {
         setUtrError("UPI Reference / UTR Number is compulsory to place this order.")
@@ -127,11 +148,17 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
 
       // Generate System Payment ID & capture user-entered UPI reference
       const isUpi = paymentMethod === "UPI"
-      const finalPaymentMethodLabel = isUpi ? `UPI (${STORE_UPI_ID})` : "Cash on Delivery"
-      const systemPaymentId = isUpi
-        ? `EQX-UPI-${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`
-        : `EQX-COD-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
-      const userUpiRefId = isUpi ? customUtr.trim() : "N/A"
+      const finalPaymentMethodLabel = isFullyPaidByWallet
+        ? "Equinox Wallet"
+        : isUpi 
+          ? `UPI (${STORE_UPI_ID})` 
+          : "Cash on Delivery"
+      const systemPaymentId = isFullyPaidByWallet
+        ? `EQX-WLT-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
+        : isUpi
+          ? `EQX-UPI-${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`
+          : `EQX-COD-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
+      const userUpiRefId = isFullyPaidByWallet ? "WALLET" : isUpi ? customUtr.trim() : "N/A"
 
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -148,6 +175,7 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
           paymentMethod: finalPaymentMethodLabel,
           paymentId: systemPaymentId,
           upiRefId: userUpiRefId,
+          useWallet: Boolean(useWallet && walletDeduction > 0),
         }),
       })
 
@@ -157,6 +185,20 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
       }
 
       const data = await response.json()
+      
+      if (data.newWalletBalance !== undefined) {
+        setWalletBalance(data.newWalletBalance)
+        onUpdateUser?.({ ...user, wallet_balance: data.newWalletBalance })
+        try {
+          const stored = localStorage.getItem("supermarket_user")
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            parsed.wallet_balance = data.newWalletBalance
+            localStorage.setItem("supermarket_user", JSON.stringify(parsed))
+          }
+        } catch (e) {}
+      }
+
       setReceipt({
         ...data.receipt,
         billNo: data.billNo,
@@ -289,141 +331,187 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                 </div>
               </div>
 
+              {/* Equinox Wallet Balance Option */}
+              {walletBalance > 0 && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3.5 transition-all">
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-2xs">
+                        <Wallet className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-stone-900">Use Equinox Wallet</span>
+                          <span className="font-mono text-[10px] font-extrabold text-emerald-800 bg-emerald-100/90 px-1.5 py-0.2 rounded border border-emerald-200/80">
+                            Available: {formatCurrency(walletBalance)}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-stone-500">
+                          {isFullyPaidByWallet 
+                            ? "Wallet covers 100% of this order total!" 
+                            : `Applies ${formatCurrency(walletDeduction)} from your wallet balance`}
+                        </p>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={useWallet}
+                      onChange={(e) => setUseWallet(e.target.checked)}
+                      className="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    />
+                  </label>
+                </div>
+              )}
+
               {/* SECTION 2: Payment Method Selection */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-2">
-                  Select Payment Option (0% Extra Fees)
+                  {isFullyPaidByWallet ? "Payment Method" : "Select Payment Option (0% Extra Fees)"}
                 </label>
 
-                <div className="grid grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => { setPaymentMethod("UPI"); setUtrError(""); }}
-                    className={`flex flex-col items-center justify-center gap-1 rounded-2xl border p-3 text-center transition-all ${
-                      paymentMethod === "UPI"
-                        ? "border-emerald-600 bg-emerald-50/80 text-emerald-900 shadow-sm ring-2 ring-emerald-500/20"
-                        : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
-                    }`}
-                  >
-                    <QrCode className="h-5 w-5 text-emerald-700" />
-                    <span className="text-xs font-bold">UPI / QR Payment</span>
-                    <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.2 rounded">Instant · 0% Fee</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => { setPaymentMethod("COD"); setUtrError(""); }}
-                    className={`flex flex-col items-center justify-center gap-1 rounded-2xl border p-3 text-center transition-all ${
-                      paymentMethod === "COD"
-                        ? "border-emerald-600 bg-emerald-50/80 text-emerald-900 shadow-sm ring-2 ring-emerald-500/20"
-                        : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
-                    }`}
-                  >
-                    <Banknote className="h-5 w-5 text-stone-700" />
-                    <span className="text-xs font-bold">Cash on Delivery</span>
-                    <span className="text-[9px] text-stone-400">Pay on doorstep</span>
-                  </button>
-                </div>
-
-                {/* UPI Dynamic QR View */}
-                {paymentMethod === "UPI" && (
-                  <div className="mt-3 rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50/70 to-white p-4">
-                    <div className="flex flex-col items-center text-center">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 mb-1">
-                        <span>Scan &amp; Pay {formatCurrency(grandTotal)}</span>
-                      </div>
-                      <p className="text-[11px] text-stone-500 mb-3">
-                        GPay · PhonePe · Paytm · CRED · BHIM
-                      </p>
-
-                      {qrDataUrl ? (
-                        <div className="relative p-2.5 bg-white rounded-2xl border border-emerald-100 shadow-md">
-                          <img src={qrDataUrl} alt="UPI Payment QR Code" className="h-44 w-44 object-contain rounded-xl" />
-                          <div className="absolute inset-x-0 -bottom-2.5 flex justify-center">
-                            <span className="rounded-full bg-emerald-700 px-3 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-sm">
-                              UPI Auto-Verified
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="h-44 w-44 flex items-center justify-center bg-stone-100 rounded-2xl">
-                          <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
-                        </div>
-                      )}
-
-                      {/* Store UPI ID with Copy Button */}
-                      <div className="mt-5 flex items-center gap-2 rounded-xl bg-stone-100/80 border border-stone-200 px-3 py-1.5 text-xs">
-                        <span className="font-mono font-bold text-stone-800">{STORE_UPI_ID}</span>
-                        <button
-                          type="button"
-                          onClick={handleCopyUpi}
-                          className="flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 active:scale-95 transition"
-                        >
-                          {copiedUpi ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                          <span className="text-[10px]">{copiedUpi ? "Copied!" : "Copy"}</span>
-                        </button>
-                      </div>
-
-                      {/* Direct Mobile UPI Intent Button */}
-                      <a
-                        href={upiIntentUrl}
-                        className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-800 transition active:scale-95"
+                {isFullyPaidByWallet ? (
+                  <div className="rounded-2xl border border-emerald-300 bg-emerald-50/90 p-4 text-center">
+                    <p className="font-bold text-xs text-emerald-950 flex items-center justify-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      100% Paid with Equinox Wallet
+                    </p>
+                    <p className="mt-1 text-[11px] text-emerald-800">
+                      Your wallet balance covers the entire order of {formatCurrency(walletDeduction)}. No UPI or cash payment required!
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => { setPaymentMethod("UPI"); setUtrError(""); }}
+                        className={`flex flex-col items-center justify-center gap-1 rounded-2xl border p-3 text-center transition-all ${
+                          paymentMethod === "UPI"
+                            ? "border-emerald-600 bg-emerald-50/80 text-emerald-900 shadow-sm ring-2 ring-emerald-500/20"
+                            : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
+                        }`}
                       >
-                        <Smartphone className="h-3.5 w-3.5" />
-                        <span>Pay directly in UPI App ({formatCurrency(grandTotal)})</span>
-                      </a>
+                        <QrCode className="h-5 w-5 text-emerald-700" />
+                        <span className="text-xs font-bold">UPI / QR Payment</span>
+                        <span className="text-[9px] font-semibold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.2 rounded">Instant · 0% Fee</span>
+                      </button>
 
-                      {/* Compulsory UTR / Reference ID Field */}
-                      <div className="mt-4 w-full text-left rounded-xl bg-white p-3.5 border border-emerald-200 shadow-xs">
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] font-bold text-stone-800 flex items-center gap-1">
-                            <span>UPI Reference / UTR Number</span>
-                            <span className="text-rose-600 font-extrabold">* (Compulsory)</span>
-                          </label>
-                          <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60">
-                            12 Digits
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-stone-500 mb-2 leading-relaxed">
-                          After completing payment of {formatCurrency(grandTotal)} in your UPI app, copy &amp; paste the 12-digit UTR / Ref No from your payment receipt here. <strong>Orders cannot be placed without this reference.</strong>
-                        </p>
-                        <input
-                          type="text"
-                          required
-                          value={customUtr}
-                          onChange={e => {
-                            setCustomUtr(e.target.value)
-                            if (utrError) setUtrError("")
-                          }}
-                          placeholder="e.g. 428910284910 (12-digit UPI Ref / UTR)"
-                          className={`w-full rounded-xl border px-3 py-2 text-xs font-mono font-bold text-stone-900 outline-none transition ${
-                            utrError 
-                              ? "border-rose-400 bg-rose-50/40 focus:ring-2 focus:ring-rose-200" 
-                              : "border-stone-200 bg-stone-50/40 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
-                          }`}
-                        />
-                        {utrError && (
-                          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">
-                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                            <span>{utrError}</span>
-                          </div>
-                        )}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setPaymentMethod("COD"); setUtrError(""); }}
+                        className={`flex flex-col items-center justify-center gap-1 rounded-2xl border p-3 text-center transition-all ${
+                          paymentMethod === "COD"
+                            ? "border-emerald-600 bg-emerald-50/80 text-emerald-900 shadow-sm ring-2 ring-emerald-500/20"
+                            : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
+                        }`}
+                      >
+                        <Banknote className="h-5 w-5 text-stone-700" />
+                        <span className="text-xs font-bold">Cash on Delivery</span>
+                        <span className="text-[9px] text-stone-400">Pay on doorstep</span>
+                      </button>
                     </div>
-                  </div>
-                )}
 
-                {/* COD View */}
-                {paymentMethod === "COD" && (
-                  <div className="mt-3 rounded-2xl border border-stone-200 bg-stone-50 p-4 text-xs text-stone-600 space-y-1.5">
-                    <p className="font-bold text-stone-900 flex items-center gap-1.5">
-                      <Banknote className="h-4 w-4 text-emerald-700" />
-                      Cash on Delivery Available
-                    </p>
-                    <p className="text-[11px] leading-relaxed">
-                      You can pay via Cash or scan the delivery executive's UPI QR code upon arrival at your doorstep. Exact change is appreciated!
-                    </p>
-                  </div>
+                    {/* UPI Dynamic QR View */}
+                    {paymentMethod === "UPI" && (
+                      <div className="mt-3 rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50/70 to-white p-4">
+                        <div className="flex flex-col items-center text-center">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 mb-1">
+                            <span>Scan &amp; Pay {formatCurrency(grandTotal)}</span>
+                          </div>
+                          <p className="text-[11px] text-stone-500 mb-3">
+                            GPay · PhonePe · Paytm · CRED · BHIM
+                          </p>
+
+                          {qrDataUrl ? (
+                            <div className="relative p-2.5 bg-white rounded-2xl border border-emerald-100 shadow-md">
+                              <img src={qrDataUrl} alt="UPI Payment QR Code" className="h-44 w-44 object-contain rounded-xl" />
+                              <div className="absolute inset-x-0 -bottom-2.5 flex justify-center">
+                                <span className="rounded-full bg-emerald-700 px-3 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-sm">
+                                  UPI Auto-Verified
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="h-44 w-44 flex items-center justify-center bg-stone-100 rounded-2xl">
+                              <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
+                            </div>
+                          )}
+
+                          {/* Store UPI ID with Copy Button */}
+                          <div className="mt-5 flex items-center gap-2 rounded-xl bg-stone-100/80 border border-stone-200 px-3 py-1.5 text-xs">
+                            <span className="font-mono font-bold text-stone-800">{STORE_UPI_ID}</span>
+                            <button
+                              type="button"
+                              onClick={handleCopyUpi}
+                              className="flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 active:scale-95 transition"
+                            >
+                              {copiedUpi ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                              <span className="text-[10px]">{copiedUpi ? "Copied!" : "Copy"}</span>
+                            </button>
+                          </div>
+
+                          {/* Direct Mobile UPI Intent Button */}
+                          <a
+                            href={upiIntentUrl}
+                            className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-800 transition active:scale-95"
+                          >
+                            <Smartphone className="h-3.5 w-3.5" />
+                            <span>Pay directly in UPI App ({formatCurrency(grandTotal)})</span>
+                          </a>
+
+                          {/* Compulsory UTR / Reference ID Field */}
+                          <div className="mt-4 w-full text-left rounded-xl bg-white p-3.5 border border-emerald-200 shadow-xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[11px] font-bold text-stone-800 flex items-center gap-1">
+                                <span>UPI Reference / UTR Number</span>
+                                <span className="text-rose-600 font-extrabold">* (Compulsory)</span>
+                              </label>
+                              <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60">
+                                12 Digits
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-stone-500 mb-2 leading-relaxed">
+                              After completing payment of {formatCurrency(grandTotal)} in your UPI app, copy &amp; paste the 12-digit UTR / Ref No from your payment receipt here. <strong>Orders cannot be placed without this reference.</strong>
+                            </p>
+                            <input
+                              type="text"
+                              required
+                              value={customUtr}
+                              onChange={e => {
+                                setCustomUtr(e.target.value)
+                                if (utrError) setUtrError("")
+                              }}
+                              placeholder="e.g. 428910284910 (12-digit UPI Ref / UTR)"
+                              className={`w-full rounded-xl border px-3 py-2 text-xs font-mono font-bold text-stone-900 outline-none transition ${
+                                utrError 
+                                  ? "border-rose-400 bg-rose-50/40 focus:ring-2 focus:ring-rose-200" 
+                                  : "border-stone-200 bg-stone-50/40 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
+                              }`}
+                            />
+                            {utrError && (
+                              <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                <span>{utrError}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* COD View */}
+                    {paymentMethod === "COD" && (
+                      <div className="mt-3 rounded-2xl border border-stone-200 bg-stone-50 p-4 text-xs text-stone-600 space-y-1.5">
+                        <p className="font-bold text-stone-900 flex items-center gap-1.5">
+                          <Banknote className="h-4 w-4 text-emerald-700" />
+                          Cash on Delivery Available
+                        </p>
+                        <p className="text-[11px] leading-relaxed">
+                          You can pay via Cash or scan the delivery executive's UPI QR code upon arrival at your doorstep. Exact change is appreciated!
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -463,10 +551,24 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                     <span className="font-semibold text-stone-800">{formatCurrency(estimatedTax)}</span>
                   </div>
 
+                  {useWallet && walletDeduction > 0 && (
+                    <div className="flex justify-between items-center text-emerald-800 font-semibold bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
+                      <span className="flex items-center gap-1.5">
+                        <Wallet className="h-3.5 w-3.5 text-emerald-600" />
+                        Equinox Wallet Applied
+                      </span>
+                      <span>-{formatCurrency(walletDeduction)}</span>
+                    </div>
+                  )}
+
                   <div className="mt-2 pt-2 border-t border-dashed border-stone-200 flex items-baseline justify-between text-stone-900">
                     <div>
                       <span className="font-bold text-xs">Order Amount</span>
-                      <p className="text-[9px] text-stone-400">Total payable via {paymentMethod === "UPI" ? "UPI" : "Cash on Delivery"}</p>
+                      <p className="text-[9px] text-stone-400">
+                        {isFullyPaidByWallet 
+                          ? "100% covered by Equinox Wallet" 
+                          : `Total payable via ${paymentMethod === "UPI" ? "UPI" : "Cash on Delivery"}`}
+                      </p>
                     </div>
                     <span className="font-serif text-xl font-extrabold text-stone-900">
                       {formatCurrency(grandTotal)}
@@ -483,6 +585,8 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
               >
                 {isProcessing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isFullyPaidByWallet ? (
+                  `✓ Place Order with Equinox Wallet (${formatCurrency(walletDeduction)})`
                 ) : paymentMethod === "UPI" ? (
                   customUtr.trim()
                     ? `✓ Confirm UPI Payment & Place Order (${formatCurrency(grandTotal)})`

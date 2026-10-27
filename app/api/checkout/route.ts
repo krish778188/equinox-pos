@@ -9,16 +9,36 @@ const execAsync = promisify(exec)
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { items, customer, bags, discountCode, deliveryAddress, paymentMethod, paymentId, upiRefId } = body
+    const { items, customer, bags, discountCode, deliveryAddress, paymentMethod, paymentId, upiRefId, useWallet } = body
 
     const db = getDb()
 
+    // 1. Fetch user's wallet balance if useWallet is requested
+    let currentWalletBalance = 0
+    const customerEmail = (customer?.email || "").trim().toLowerCase()
+    if (useWallet && customerEmail) {
+      const userRow: any = await new Promise((resolve) => {
+        db.get('SELECT wallet_balance FROM Users WHERE LOWER(email) = ?', [customerEmail], (err, row) => resolve(row))
+      })
+      if (userRow && userRow.wallet_balance > 0) {
+        currentWalletBalance = Number(userRow.wallet_balance)
+      }
+    }
+
+    // Check if wallet covers 100% of order
+    const rawItemsTotal = (items || []).reduce((acc: number, it: any) => acc + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0)
+    const isFullyPaidByWallet = Boolean(useWallet && currentWalletBalance >= (rawItemsTotal * 1.05 + 40))
+
     // Ensure payment method
-    const chosenMethod = paymentMethod === 'Cash on Delivery' ? 'Cash on Delivery' : 'UPI (krishraj453@okicici)'
+    let chosenMethod = isFullyPaidByWallet
+      ? 'Equinox Wallet'
+      : paymentMethod === 'Cash on Delivery'
+        ? 'Cash on Delivery'
+        : 'UPI (krishraj453@okicici)'
     const isUpi = chosenMethod.startsWith('UPI')
 
-    // Compulsory UPI Reference ID validation
-    if (isUpi && (!upiRefId || !upiRefId.trim())) {
+    // Compulsory UPI Reference ID validation (only if paying via UPI and not fully covered by wallet)
+    if (!isFullyPaidByWallet && isUpi && (!upiRefId || !upiRefId.trim())) {
       db.close()
       return NextResponse.json({ 
         error: "UPI Reference / UTR Number is compulsory for UPI payments. Please complete the payment in your UPI app and enter the reference number." 
@@ -27,9 +47,11 @@ export async function POST(req: Request) {
 
     const cleanUpiRefId = isUpi ? upiRefId.trim() : "N/A"
     const chosenId = paymentId || (
-      isUpi 
-        ? `EQX-UPI-${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`
-        : `EQX-COD-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
+      isFullyPaidByWallet
+        ? `EQX-WLT-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
+        : isUpi 
+          ? `EQX-UPI-${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`
+          : `EQX-COD-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
     )
 
     // Fetch active discount
@@ -103,7 +125,21 @@ export async function POST(req: Request) {
     }
 
     if (result && result.status === "success") {
-      const grandTotal = result.receipt.grand_total
+      let grandTotal = Number(result.receipt.grand_total || 0)
+      let walletAmountUsed = 0
+
+      // Apply wallet deduction if user requested and has balance
+      if (useWallet && currentWalletBalance > 0 && customerEmail) {
+        walletAmountUsed = Math.min(currentWalletBalance, grandTotal)
+        grandTotal = Number(Math.max(0, grandTotal - walletAmountUsed).toFixed(2))
+
+        if (grandTotal === 0) {
+          chosenMethod = 'Equinox Wallet'
+          chosenId = `EQX-WLT-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`
+        } else {
+          chosenMethod = `${chosenMethod} (+ Wallet ₹${walletAmountUsed.toFixed(2)})`
+        }
+      }
 
       const saleId = await new Promise<number>((resolve, reject) => {
         db.run(
@@ -125,6 +161,32 @@ export async function POST(req: Request) {
           }
         )
       })
+
+      // If wallet balance was used, deduct from Users and record transaction
+      let remainingWalletBalance = currentWalletBalance
+      if (walletAmountUsed > 0 && customerEmail) {
+        remainingWalletBalance = Number(Math.max(0, currentWalletBalance - walletAmountUsed).toFixed(2))
+        await new Promise<void>((resolve) => {
+          db.run(
+            'UPDATE Users SET wallet_balance = MAX(0, wallet_balance - ?) WHERE LOWER(email) = ?',
+            [walletAmountUsed, customerEmail],
+            () => resolve()
+          )
+        })
+
+        await new Promise<void>((resolve) => {
+          db.run(
+            `INSERT INTO WalletTransactions (user_email, amount, type, description, reference_id) VALUES (?, ?, 'DEBIT', ?, ?)`,
+            [
+              customerEmail,
+              walletAmountUsed,
+              `Redeemed on Supermarket Order #${saleId}`,
+              `ORD-${saleId}`
+            ],
+            () => resolve()
+          )
+        })
+      }
 
       const stmt = db.prepare('INSERT INTO Line_Items (sale_id, product_id, quantity) VALUES (?, ?, ?)')
       for (const item of items) {
@@ -149,6 +211,9 @@ export async function POST(req: Request) {
       result.receipt.payment_method = chosenMethod
       result.receipt.payment_id = chosenId
       result.receipt.upi_ref_id = cleanUpiRefId
+      result.receipt.grand_total = grandTotal
+      result.receipt.wallet_used = walletAmountUsed
+      result.receipt.new_wallet_balance = remainingWalletBalance
       if (customer) result.receipt.customer = customer
       if (bags) result.receipt.bags = bags
 
@@ -160,7 +225,9 @@ export async function POST(req: Request) {
         status: 'Order Placed',
         paymentMethod: chosenMethod,
         paymentId: chosenId,
-        upiRefId: cleanUpiRefId
+        upiRefId: cleanUpiRefId,
+        walletUsed: walletAmountUsed,
+        newWalletBalance: remainingWalletBalance
       })
     } else {
       return NextResponse.json({ error: "Checkout calculation failed" }, { status: 500 })

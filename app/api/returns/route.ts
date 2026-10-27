@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
       // Check if bill date is within 7 days
       const sale: any = await new Promise((resolve) => {
-        db.get('SELECT created_at, status FROM Sales WHERE id = ?', [saleId], (err, row) => resolve(row))
+        db.get('SELECT created_at, status, payment_method FROM Sales WHERE id = ?', [saleId], (err, row) => resolve(row))
       })
 
       if (!sale) {
@@ -100,11 +100,15 @@ export async function POST(req: Request) {
         db.run("UPDATE Sales SET status = 'Return Requested' WHERE id = ?", [saleId], () => resolve())
       })
 
+      const isCod = (sale.payment_method || "").toLowerCase().includes("cash") || (sale.payment_method || "").toLowerCase().includes("cod")
+
       db.close()
 
       return NextResponse.json({
         success: true,
-        message: "Your return request has been submitted successfully. It will be reviewed and approved by admin within 48 hours."
+        message: isCod
+          ? "Your return request has been submitted. Money will be refunded to wallet within 7-8 working days upon admin approval."
+          : "Your return request has been submitted. Money will be refunded to your UPI account within 7-8 working days upon admin approval."
       })
     }
 
@@ -148,16 +152,53 @@ export async function POST(req: Request) {
         })
       }
 
+      // Fetch sale details to determine payment method (COD vs UPI)
+      const sale: any = await new Promise((resolve) => {
+        db.get('SELECT * FROM Sales WHERE id = ?', [saleId], (err, row) => resolve(row))
+      })
+
       // Mark Sale as Refunded
       await new Promise<void>((resolve) => {
         db.run("UPDATE Sales SET status = 'Refunded' WHERE id = ?", [saleId], () => resolve())
       })
 
+      const method = (sale?.payment_method || "").toLowerCase()
+      const isCod = method.includes("cash") || method.includes("cod")
+      const refundAmt = Number(amount || sale?.total_amount || 0)
+
+      // Only COD orders have their return amount credited into user's Equinox Wallet
+      let walletCredited = false
+      if (isCod && refundAmt > 0 && sale?.customer_email) {
+        walletCredited = true
+        await new Promise<void>((resolve) => {
+          db.run(
+            "UPDATE Users SET wallet_balance = COALESCE(wallet_balance, 0) + ? WHERE LOWER(email) = LOWER(?)",
+            [refundAmt, sale.customer_email],
+            () => resolve()
+          )
+        })
+
+        await new Promise<void>((resolve) => {
+          db.run(
+            `INSERT INTO WalletTransactions (user_email, amount, type, description, reference_id) VALUES (?, ?, 'CREDIT', ?, ?)`,
+            [
+              sale.customer_email.toLowerCase(),
+              refundAmt,
+              `Return Refund for Order #${saleId} (Cash on Delivery)`,
+              requestId ? `RET-${requestId}` : `ORD-${saleId}`
+            ],
+            () => resolve()
+          )
+        })
+      }
+
       db.close()
 
       return NextResponse.json({
         success: true,
-        message: `Refund of ₹${amount || 0} approved and processed successfully. Inventory restocked.`
+        message: walletCredited
+          ? `Refund of ₹${refundAmt} approved and credited to customer's Equinox Wallet. Inventory restocked.`
+          : `Refund of ₹${refundAmt} approved for UPI account (processed within 7-8 working days). Inventory restocked.`
       })
     }
 

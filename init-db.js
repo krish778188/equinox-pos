@@ -36,6 +36,18 @@ async function initDb(customDbPath = null) {
   await runAsync("ALTER TABLE Sales ADD COLUMN payment_method VARCHAR(100) DEFAULT 'UPI (krishraj453@okicici)'").catch(() => {});
   await runAsync("ALTER TABLE Sales ADD COLUMN payment_id VARCHAR(100)").catch(() => {});
   await runAsync("ALTER TABLE Sales ADD COLUMN upi_ref_id VARCHAR(100)").catch(() => {});
+  await runAsync("ALTER TABLE Users ADD COLUMN wallet_balance DECIMAL(10, 2) DEFAULT 0.00").catch(() => {});
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS WalletTransactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_email VARCHAR(255) NOT NULL,
+      amount DECIMAL(10, 2) NOT NULL,
+      type VARCHAR(50) NOT NULL,
+      description TEXT,
+      reference_id VARCHAR(100),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `).catch(() => {});
 
   // Ensure default demo user exists
   await runAsync(`

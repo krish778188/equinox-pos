@@ -27,7 +27,8 @@ import {
   AlertTriangle,
   Zap,
   MapPin,
-  FileText
+  FileText,
+  RefreshCw
 } from "lucide-react"
 import { formatCurrency, SUPERMARKET_CATEGORIES } from "@/lib/pos-data"
 import { printSupermarketReceipt } from "@/lib/print-bill"
@@ -203,18 +204,17 @@ export function AdminPortal({
   }
 
   useEffect(() => {
+    // Initial fetch on mount
     fetchReturns()
     fetchStockAndSales()
 
-    // Real-time polling every 4 seconds
+    // Real-time polling every 4 seconds ONLY for stock and sales (Return requests are strictly manual refresh)
     const interval = setInterval(() => {
-      fetchReturns()
       fetchStockAndSales()
     }, 4000)
 
-    // Immediate refresh when tab receives focus
+    // Immediate refresh of stock & sales when tab receives focus
     const handleFocus = () => {
-      fetchReturns()
       fetchStockAndSales()
     }
     window.addEventListener("focus", handleFocus)
@@ -772,10 +772,13 @@ export function AdminPortal({
                     <span>Pending Approval: <strong className="text-amber-800">{pendingReturnsCount}</strong></span>
                   </div>
                   <button 
+                    type="button"
                     onClick={fetchReturns}
-                    className="text-xs font-bold text-emerald-700 hover:underline"
+                    disabled={loadingReturns}
+                    className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-700 shadow-xs hover:bg-stone-50 transition active:scale-95 disabled:opacity-50"
                   >
-                    Refresh Requests
+                    <RefreshCw className={`h-3.5 w-3.5 text-emerald-700 ${loadingReturns ? "animate-spin" : ""}`} />
+                    <span>{loadingReturns ? "Refreshing..." : "Manual Refresh"}</span>
                   </button>
                 </div>
 

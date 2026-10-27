@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     // 1. Check Users table first (by email, mobile, or id)
     const user: any = await new Promise((resolve) => {
       db.get(
-        'SELECT id, name, email, mobile, role, address, password FROM Users WHERE (LOWER(email) = LOWER(?) OR mobile = ? OR id = ?)',
+        'SELECT id, name, email, mobile, role, address, password, wallet_balance FROM Users WHERE (LOWER(email) = LOWER(?) OR mobile = ? OR id = ?)',
         [identifier, identifier, identifier],
         (err, row) => resolve(row)
       )
