@@ -31,5 +31,7 @@ yarn-error.log*
 
 # Custom POS backend files
 backend/pos_backend
+.venv_ppt/
+*.pptx
 
 # We purposely DO NOT ignore pos.db so your current database uploads to Render!
