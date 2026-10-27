@@ -44,6 +44,15 @@ export function OrderHistoryModal({
   }
 
   useEffect(() => {
+    // Whenever switching orders or closing detail view, ensure return prompt is closed
+    setIsReturnPromptOpen(false)
+    setReturnErrorMsg("")
+    setReturnSuccessMsg("")
+    setReturnReason("Product quality not as expected")
+    setCustomReason("")
+  }, [selectedOrder?.id])
+
+  useEffect(() => {
     if (isOpen) {
       fetchOrders()
       setSelectedOrder(null)
@@ -138,7 +147,13 @@ export function OrderHistoryModal({
           <div className="flex items-center gap-3">
             {selectedOrder ? (
               <button
-                onClick={() => setSelectedOrder(null)}
+                type="button"
+                onClick={() => {
+                  setSelectedOrder(null)
+                  setIsReturnPromptOpen(false)
+                  setReturnSuccessMsg("")
+                  setReturnErrorMsg("")
+                }}
                 className="flex h-8 w-8 items-center justify-center rounded-xl bg-stone-100 text-stone-600 hover:bg-stone-200 transition"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -159,7 +174,14 @@ export function OrderHistoryModal({
           </div>
 
           <button
-            onClick={onClose}
+            type="button"
+            onClick={() => {
+              setSelectedOrder(null)
+              setIsReturnPromptOpen(false)
+              setReturnSuccessMsg("")
+              setReturnErrorMsg("")
+              onClose()
+            }}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-stone-500 hover:bg-stone-200"
           >
             <X className="h-4 w-4" />
@@ -482,7 +504,12 @@ export function OrderHistoryModal({
                 return (
                   <div
                     key={order.id}
-                    onClick={() => setSelectedOrder(order)}
+                    onClick={() => {
+                      setSelectedOrder(order)
+                      setIsReturnPromptOpen(false)
+                      setReturnSuccessMsg("")
+                      setReturnErrorMsg("")
+                    }}
                     className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-stone-100 bg-white p-4 shadow-xs transition-all hover:border-emerald-200 hover:shadow-md cursor-pointer"
                   >
                     <div className="flex items-start gap-3">
