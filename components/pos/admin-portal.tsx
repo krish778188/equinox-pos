@@ -1487,7 +1487,7 @@ export function AdminPortal({
                   type={showAuthPassword ? "text" : "password"}
                   value={authPassword}
                   onChange={e => setAuthPassword(e.target.value)}
-                  placeholder="Master Password (equinox@123)"
+                  placeholder="Master Password"
                   className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-2.5 pr-10 text-xs text-stone-800 outline-none focus:ring-2 focus:ring-emerald-500/20"
                 />
                 <button
