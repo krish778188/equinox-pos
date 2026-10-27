@@ -427,15 +427,52 @@ export function CheckoutModal({ items, isOpen, onClose, onSuccess, user, onUpdat
                 )}
               </div>
 
-              {/* Order Total Pill */}
-              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-3 flex items-center justify-between text-xs">
-                <div>
-                  <span className="text-stone-500">Order Amount</span>
-                  <p className="text-[10px] text-stone-400">Inclusive of delivery &amp; taxes</p>
+              {/* Order Amount & Price Breakdown */}
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-3.5 text-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-200/80">
+                  <span className="font-bold text-stone-800 text-[11px] uppercase tracking-wider">Price Breakdown</span>
+                  <span className="text-[10px] text-stone-400">
+                    {safeItems.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0)} items
+                  </span>
                 </div>
-                <span className="font-serif text-xl font-extrabold text-stone-900">
-                  {formatCurrency(grandTotal)}
-                </span>
+
+                <div className="mt-2 space-y-1.5 text-stone-600 text-[11px]">
+                  <div className="flex justify-between">
+                    <span className="text-stone-500">Items Total</span>
+                    <span className="font-semibold text-stone-800">{formatCurrency(subtotal)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-stone-500">Delivery Fee</span>
+                    {deliveryFee === 0 ? (
+                      <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px]">FREE</span>
+                    ) : (
+                      <span className="font-semibold text-stone-800">{formatCurrency(deliveryFee)}</span>
+                    )}
+                  </div>
+
+                  {formData.carryBags > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">Eco-Friendly Carry Bags ({formData.carryBags})</span>
+                      <span className="font-semibold text-stone-800">{formatCurrency(bagCost)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between">
+                    <span className="text-stone-500">Taxes &amp; Packaging (GST)</span>
+                    <span className="font-semibold text-stone-800">{formatCurrency(estimatedTax)}</span>
+                  </div>
+
+                  <div className="mt-2 pt-2 border-t border-dashed border-stone-200 flex items-baseline justify-between text-stone-900">
+                    <div>
+                      <span className="font-bold text-xs">Order Amount</span>
+                      <p className="text-[9px] text-stone-400">Total payable via {paymentMethod === "UPI" ? "UPI" : "Cash on Delivery"}</p>
+                    </div>
+                    <span className="font-serif text-xl font-extrabold text-stone-900">
+                      {formatCurrency(grandTotal)}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Submit Button */}
